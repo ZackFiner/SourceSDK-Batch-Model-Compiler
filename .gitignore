@@ -1,6 +1,6 @@
 .__pycache__/
 .idea/
+.venv/
 .idea/workspace.xml
 .idea/vcs.xml
 .idea/workspace.xml
-*.xml
