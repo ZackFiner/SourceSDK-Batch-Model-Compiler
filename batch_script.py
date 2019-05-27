@@ -99,7 +99,7 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
                         # we need to update our local midpoint and radius
                         # i can easily update midpoint, but the radius is what i'm confused about
                         merged_pairs.add(neighbor[0])  # mark this pair as merged, so we don't re-evaluate it
-                        
+
 
 
 
