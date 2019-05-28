@@ -5,7 +5,7 @@ import random
 import math
 
 def truncate(n, k):
-    return (math.floor(n/k)*k + (k/2))
+    return int(math.floor(n/k)*k + (k/2))
 
 
 def gen_cluster_grid(object_list, grid_size) -> dict:
@@ -122,12 +122,10 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
 
 
 
-def cluster_objects(object_list):
+def cluster_objects(object_list, grid_size, max_per_grid):
     # we want to break these objects into groups where there are only 40 of them per group
     # keep in mind that 803/40 = 20, so we've reduced the number of props on the map
     random.shuffle(object_list)
-    grid_size = 4096
-    max_per_grid = 32
 
     grid_dict = gen_cluster_grid(object_list, grid_size)
 
@@ -138,8 +136,6 @@ def cluster_objects(object_list):
     return finished_groups
 
 
-data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", 24)
-d = cluster_objects(data)
 
 def draw_cluster_image(cluster_set, grid_size):
     cnvs = np.zeros([1024, 1024, 3], dtype=np.uint8)  # create a blank canvas, initially black
@@ -164,9 +160,11 @@ def draw_cluster_image(cluster_set, grid_size):
         brush.line(vertical_data)  # draw vertical
 
 
+
     siv.save('cluster_debug.png')
     # 32768^2
     # 1024x1024
+
 
 
 
@@ -177,6 +175,8 @@ def get_max_l(data_dict):
         if len(data_list) > max_v:
             max_v = len(data_list)
     return max_v
+data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", 24)
+d = cluster_objects(data, 4096, 32)
 #print(get_max_l(d))
 print(len(d))
 sum = 0
