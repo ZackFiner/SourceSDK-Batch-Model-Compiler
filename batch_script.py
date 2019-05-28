@@ -1,6 +1,7 @@
 import vmf_reader
 import numpy as np
-
+from PIL import Image, ImageDraw
+import random
 def truncate(n, k):
     return int(n/k)*k
 
@@ -139,6 +140,28 @@ def cluster_objects(object_list):
 data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", 24)
 d = cluster_objects(data)
 
+def draw_cluster_image(cluster_set):
+    cnvs = np.zeros([1024, 1024, 3], dtype=np.uint8)  # create a blank canvas, initially black
+    siv = Image.fromarray(cnvs, 'RGB')
+    brush = ImageDraw.Draw(siv)
+    def new_color():
+        """Returns a random color list. RGB."""
+        return [round(255 * random.random()), round(255 * random.random()), round(255 * random.random())]
+    for cluster in cluster_set:
+        cluster_color = new_color()
+        for point in cluster:
+            our_origin = point.pt[:2]  # np array of dim 3
+            our_origin = (our_origin/16_384)*1024
+            brush.ellipse([(our_origin[0], our_origin[1]),(our_origin[0]+10, our_origin[1]+10)], fill=(cluster_color[0],cluster_color[1],cluster_color[2]))
+
+
+
+    siv.save('cluster_debug.png')
+    # 32768^2
+    # 1024x1024
+
+
+
 def get_max_l(data_dict):
     max_v = 0
     for l in data_dict:
@@ -148,5 +171,10 @@ def get_max_l(data_dict):
     return max_v
 #print(get_max_l(d))
 print(len(d))
+sum = 0
 for item in d:
     print(len(item))
+    sum += len(item)
+
+print(sum)
+draw_cluster_image(d)
