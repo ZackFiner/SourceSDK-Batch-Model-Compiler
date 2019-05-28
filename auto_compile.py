@@ -159,15 +159,19 @@ def autoCompile(qcpath):
         shutil.copy(src=gamepath+'/models/'+moddir+'\\'+file, dst=parent_dir + '\\merger_ready\\models\\'+moddir)
 
 
+def autoCompileFromMultiple():
+    pass
 
 
-#getSkinsFromQC('C:\\Users\Zackry Finer\Desktop\WIP Folder\Models\map_details\window_facade\\facade3.qc')
-#autoCompile('C:\\Users\Zackry Finer\Desktop\WIP Folder\Models\map_details\window_facade\\facade3.qc')
+# getSkinsFromQC('C:\\Users\Zackry Finer\Desktop\WIP Folder\Models\map_details\window_facade\\facade3.qc')
+# autoCompile('C:\\Users\Zackry Finer\Desktop\WIP Folder\Models\map_details\window_facade\\facade3.qc')
 '''autoTileFile('window06_4x2',
              'C:\\Users\Zackry Finer\Desktop\WIP Folder\Models\map_details\window_facade\\facade3.qc',
              'C:\\Users\Zackry Finer\Desktop\WIP Folder\Models\map_details\window_facade\\facade3_mesh.smd',
              (4,2),
              128)'''
+
+
 def compile_batch(qcname, smdname, modelname):
     autoTileFile(modelname+'_4x2',
                  'C:\\Users\Zackry Finer\Desktop\WIP Folder\Models\map_details\window_facade\\'+qcname,
