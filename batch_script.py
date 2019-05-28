@@ -79,7 +79,7 @@ def un_stack_groups(grid_dict:dict, max_per_grid, finished_list):
                 grid_dict.pop(grid_key)  # we remove empty grids
 
 
-def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
+def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size, max_cull):
     evaluation_list = [(pair, grid_dict[pair]) for pair in grid_dict.keys()]
     merged_pairs = set()
     while len(evaluation_list) > 0:
@@ -92,12 +92,12 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
         local_radius = get_max_outlier(current[1], local_mid)
 
         for neighbor in neighbor_list:  # check if the neighbors can be added to our list
-            if local_radius < grid_size / 2:  # if our radius already encapsulates the full grid square, we can't add anything
+            if local_radius < max_cull / 2:  # if our radius already encapsulates the full grid square, we can't add anything
                 if len(current[1]) + len(neighbor[1]) <= max_per_grid:
                     n_mid = get_midpoint(neighbor[1])
                     n_rad = get_max_outlier(neighbor[1], n_mid)
                     mid_dist = np.linalg.norm(local_mid-n_mid)
-                    if mid_dist+local_radius+n_rad <= grid_size:
+                    if mid_dist+local_radius+n_rad <= max_cull:
                         # we can now group these points together:
                         # we need to update our local midpoint and radius
                         old_count = len(current[1])
@@ -111,7 +111,7 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
                         local_mid = ((local_mid*old_count) + (n_mid*old_n_count)) / old_count+old_n_count
                         local_radius = max((np.linalg.norm(local_mid-old_local_mid) + local_radius),
                                             np.linalg.norm(n_mid-local_mid) + n_rad)
-                        print("merged at: "+str(current[0][0])+", "+str(current[0][1]))
+                        #  print("merged at: "+str(current[0][0])+", "+str(current[0][1]))
         merged_pairs.add(current[0])  # mark this entry as evaluated
         grid_dict.pop(current[0])  # remove this entry from the grid, as it has been evaluated
         finished_list.append(current[1])  # add it to the finished list
@@ -122,7 +122,7 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
 
 
 
-def cluster_objects(object_list, grid_size, max_per_grid):
+def cluster_objects(object_list, grid_size, max_per_grid, max_cull):
     # we want to break these objects into groups where there are only 40 of them per group
     # keep in mind that 803/40 = 20, so we've reduced the number of props on the map
     random.shuffle(object_list)
@@ -132,7 +132,7 @@ def cluster_objects(object_list, grid_size, max_per_grid):
     finished_groups = list()
 
     un_stack_groups(grid_dict, max_per_grid, finished_groups)
-    evaluate_leftovers(grid_dict, max_per_grid, finished_groups, grid_size)
+    evaluate_leftovers(grid_dict, max_per_grid, finished_groups, grid_size, max_cull)
     return finished_groups
 
 
@@ -175,8 +175,10 @@ def get_max_l(data_dict):
         if len(data_list) > max_v:
             max_v = len(data_list)
     return max_v
+
+
 data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", 24)
-d = cluster_objects(data, 4096, 32)
+d = cluster_objects(data, 4096, 32, 4096)
 #print(get_max_l(d))
 print(len(d))
 sum = 0
