@@ -2,8 +2,10 @@ import vmf_reader
 import numpy as np
 from PIL import Image, ImageDraw
 import random
+import math
+
 def truncate(n, k):
-    return int(n/k)*k
+    return (math.floor(n/k)*k + (k/2))
 
 
 def gen_cluster_grid(object_list, grid_size) -> dict:
@@ -109,6 +111,7 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
                         local_mid = ((local_mid*old_count) + (n_mid*old_n_count)) / old_count+old_n_count
                         local_radius = max((np.linalg.norm(local_mid-old_local_mid) + local_radius),
                                             np.linalg.norm(n_mid-local_mid) + n_rad)
+                        print("merged at: "+str(current[0][0])+", "+str(current[0][1]))
         merged_pairs.add(current[0])  # mark this entry as evaluated
         grid_dict.pop(current[0])  # remove this entry from the grid, as it has been evaluated
         finished_list.append(current[1])  # add it to the finished list
@@ -122,9 +125,7 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size):
 def cluster_objects(object_list):
     # we want to break these objects into groups where there are only 40 of them per group
     # keep in mind that 803/40 = 20, so we've reduced the number of props on the map
-
-    def truncate(n, k):
-        return int(n/k)*k
+    random.shuffle(object_list)
     grid_size = 4096
     max_per_grid = 32
 
@@ -140,7 +141,7 @@ def cluster_objects(object_list):
 data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", 24)
 d = cluster_objects(data)
 
-def draw_cluster_image(cluster_set):
+def draw_cluster_image(cluster_set, grid_size):
     cnvs = np.zeros([1024, 1024, 3], dtype=np.uint8)  # create a blank canvas, initially black
     siv = Image.fromarray(cnvs, 'RGB')
     brush = ImageDraw.Draw(siv)
@@ -151,9 +152,16 @@ def draw_cluster_image(cluster_set):
         cluster_color = new_color()
         for point in cluster:
             our_origin = point.pt[:2]  # np array of dim 3
-            our_origin = (our_origin/16_384)*1024
+            our_origin = (our_origin/32_768)*1024 + np.array([512,512])
             brush.ellipse([(our_origin[0], our_origin[1]),(our_origin[0]+10, our_origin[1]+10)], fill=(cluster_color[0],cluster_color[1],cluster_color[2]))
 
+    num_lines = int(32_768/grid_size) - 1
+    px_size = 1024/(num_lines+1)
+    for i in range(num_lines):
+        horizontal_data = [0,(i+1)*px_size, 1024, (i+1)*px_size]
+        vertical_data = [(i+1)*px_size, 0, (i+1)*px_size, 1024]
+        brush.line(horizontal_data)  # draw horizontal
+        brush.line(vertical_data)  # draw vertical
 
 
     siv.save('cluster_debug.png')
@@ -177,4 +185,4 @@ for item in d:
     sum += len(item)
 
 print(sum)
-draw_cluster_image(d)
+draw_cluster_image(d, 4096)
