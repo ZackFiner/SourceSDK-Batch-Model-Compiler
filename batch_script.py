@@ -108,7 +108,7 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size, max_cu
                         grid_dict.pop(neighbor[0])  # remove the neighbor from our grid, as we've emptied it anyway
 
                         old_local_mid = local_mid
-                        local_mid = ((local_mid*old_count) + (n_mid*old_n_count)) / old_count+old_n_count
+                        local_mid = ((local_mid*old_count) + (n_mid*old_n_count)) / (old_count+old_n_count)
                         local_radius = max((np.linalg.norm(local_mid-old_local_mid) + local_radius),
                                             np.linalg.norm(n_mid-local_mid) + n_rad)
                         #  print("merged at: "+str(current[0][0])+", "+str(current[0][1]))
