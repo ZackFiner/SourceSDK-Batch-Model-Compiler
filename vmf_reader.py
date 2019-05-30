@@ -66,7 +66,7 @@ def get_visgroupid_by_name(file_data, name):
         if braket_level == 0:
             break
     for start, end in group_data:
-        group_name = re.match(r'(?:\s*\"name\" \")(?P<name>.+)(?:\".*)', file_data[start]).groupdict()["name"]
+        group_name = re.match(r'(?:\s*\"name\" \")(?P<name>.+)(?:\".*)', file_data[start]).group("name")
         id = file_data[start+1].split(" ")[1].replace('"', "").replace("\n", "")
         if group_name == name:
             return int(id)
@@ -97,5 +97,5 @@ class batch_data_point:
                 self.ang = np.array([float(tokens[0].replace('"',"")), float(tokens[1].replace('"',"")),float(tokens[2].replace('"',""))])
 
 
-data = get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
-print(len(data))
+# data = get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
+# print(len(data))

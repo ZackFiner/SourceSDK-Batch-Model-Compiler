@@ -189,7 +189,7 @@ def get_max_l(data_dict):
     return max_v
 
 
-data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", 24)
+data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
 '''5792 is roughly sqrt(4096^2 + 4096^2), this is the max culling radius
 enforced by the grids.'''
 d = cluster_objects(data, 4096, 32, 5792)
