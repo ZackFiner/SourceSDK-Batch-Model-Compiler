@@ -14,7 +14,7 @@ def genTiledSMD(base:SMD, tileDim:tuple, spacing, skinlist=None):
                 replacemat(newtries, newtries[0].matName, random.choice(skinlist))
             r_smd.triangles.extend(newtries)
 
-    for tri in r_smd.triangles:
+    for tri in r_smd.triangles:  # now, we re-center our objects
         add_vec = np.array([0,-(w-1)*spacing/2, -h*spacing/2])
         tri.translate(add_vec)
     r_smd.sequence = base.sequence  # shallow copy

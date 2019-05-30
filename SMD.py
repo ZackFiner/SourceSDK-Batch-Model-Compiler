@@ -55,6 +55,8 @@ class TriangleData:
             r_str += '\n'+x.smdString()
         return r_str
 
+    def apply_transformation(self, rot_mat, translation):
+        return TriangleData([c.apply_transformation(rot_mat, translation) for c in self.verts], self.matName)
 
 class TimeFrame:
     def __init__(self, data: list):
@@ -66,12 +68,11 @@ class TimeFrame:
 
 
 class SMD:
-
     def __init__(self, filename: str = None):
         self.nodes = list()
         self.sequence = list()
         self.triangles = list()
-        if filename:
+        if filename is not None:
             file = open(filename, 'r')
             f_data = file.readlines()
             index = 0
