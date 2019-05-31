@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 def parse_ents(vmf_line_data):
     sub_regions = list()
@@ -42,9 +43,39 @@ def read_vmf(filename: str):
     f_data = file.readlines()
     return parse_ents(f_data), f_data
 
+def get_visgroupid_by_name(file_data, name):
+    data_start = -1
+    braket_level = 0
+    for i in range(len(file_data)):  # read up to the visgroups area
+        if file_data[i] == "visgroups\n":
+            data_start = i
+            break
+    group_data = list()
+    index = data_start
+    temp_start = -1
+    while True:
+        index += 1
+        if "{" in file_data[index]:
+            braket_level += 1
+            if braket_level == 2:
+                temp_start = index
+        if "}" in file_data[index]:
+            braket_level -= 1
+            if braket_level == 1:
+                group_data.append((temp_start+1, index-1))
+        if braket_level == 0:
+            break
+    for start, end in group_data:
+        group_name = re.match(r'(?:\s*\"name\" \")(?P<name>.+)(?:\".*)', file_data[start]).group("name")
+        id = file_data[start+1].split(" ")[1].replace('"', "").replace("\n", "")
+        if group_name == name:
+            return int(id)
+    return -1
 
-def get_batch_points_by_group(filename, groupid):
+def get_batch_points_by_group(filename, groupid:int=None, group_name:str=None):
     index_groups, file_data = read_vmf(filename)
+    if groupid is None:
+        groupid = get_visgroupid_by_name(file_data, group_name)
     new_groups = get_entities_by_visgroup(index_groups, file_data, groupid)
     r_data = list()
     for group in new_groups:
@@ -66,5 +97,5 @@ class batch_data_point:
                 self.ang = np.array([float(tokens[0].replace('"',"")), float(tokens[1].replace('"',"")),float(tokens[2].replace('"',""))])
 
 
-data = get_batch_points_by_group("gm_ost1.vmf", 24)
-print(len(data))
+# data = get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
+# print(len(data))

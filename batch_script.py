@@ -3,6 +3,8 @@ import numpy as np
 from PIL import Image, ImageDraw
 import random
 import math
+from transform import *
+from SMD import *
 
 def truncate(n, k):
     return int(math.floor(n/k)*k + (k/2))
@@ -108,18 +110,13 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size, max_cu
                         grid_dict.pop(neighbor[0])  # remove the neighbor from our grid, as we've emptied it anyway
 
                         old_local_mid = local_mid
-                        local_mid = ((local_mid*old_count) + (n_mid*old_n_count)) / old_count+old_n_count
+                        local_mid = ((local_mid*old_count) + (n_mid*old_n_count)) / (old_count+old_n_count)
                         local_radius = max((np.linalg.norm(local_mid-old_local_mid) + local_radius),
                                             np.linalg.norm(n_mid-local_mid) + n_rad)
                         #  print("merged at: "+str(current[0][0])+", "+str(current[0][1]))
         merged_pairs.add(current[0])  # mark this entry as evaluated
         grid_dict.pop(current[0])  # remove this entry from the grid, as it has been evaluated
         finished_list.append(current[1])  # add it to the finished list
-
-
-
-
-
 
 
 def cluster_objects(object_list, grid_size, max_per_grid, max_cull):
@@ -135,6 +132,21 @@ def cluster_objects(object_list, grid_size, max_per_grid, max_cull):
     evaluate_leftovers(grid_dict, max_per_grid, finished_groups, grid_size, max_cull)
     return finished_groups
 
+
+def generate_smd_for_cluster(cluster_list:list, model_map:dict)->list:
+    # model_map needs to map the .mdl files to a corresponding studio model data file name, located
+    # in this directory, we will be using it to generate the model data.
+    smd_map = dict((k, SMD(filename=model_map[k])) for k in model_map)  # pull immutable SMDs from our file system
+    clustered_smds = list()
+    for cluster in cluster_list:
+        cluster_smd = SMD()
+        for object in cluster:
+            #  each object has a .pt, .ang, and .mdl_str
+            ang_mat = genRotMat(object.ang)
+            new_entries = [c.apply_transformation(ang_mat, object.pt) for c in smd_map[object.mdl_str]]
+            cluster_smd.triangles.extend(new_entries)
+        clustered_smds.append(cluster_smd)
+    return clustered_smds
 
 
 def draw_cluster_image(cluster_set, grid_size):
@@ -177,7 +189,7 @@ def get_max_l(data_dict):
     return max_v
 
 
-data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", 24)
+data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
 '''5792 is roughly sqrt(4096^2 + 4096^2), this is the max culling radius
 enforced by the grids.'''
 d = cluster_objects(data, 4096, 32, 5792)

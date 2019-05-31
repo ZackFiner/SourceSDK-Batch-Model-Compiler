@@ -68,6 +68,8 @@ def rotVec(vec, axes, ang):
     newQ = rotQ*vec*rotQ.conjugate()
     return newQ.getEulerParam()
 
+'''
 d = genRotMat(np.array([0,0,0]))
 mult = np.dot(np.array([0,1,0]), d)
 print(mult)
+'''
