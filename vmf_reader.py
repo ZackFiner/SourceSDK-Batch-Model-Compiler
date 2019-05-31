@@ -88,7 +88,7 @@ class batch_data_point:
         self.mdl_str = ""
         for i in range(parse_data_group[0], parse_data_group[1]):
             if '"model"' in parse_data[i]:
-                self.mdl_str = parse_data[i].split(" ")[1]
+                self.mdl_str = parse_data[i].split(" ")[1].replace("\n",'').replace('"',"")
             if '"origin"' in parse_data[i]:
                 tokens = parse_data[i].split(" ")[1:]
                 self.pt = np.array([float(tokens[0].replace('"',"")), float(tokens[1].replace('"',"")),float(tokens[2].replace('"',""))])

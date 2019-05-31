@@ -40,7 +40,7 @@ def get_neighbors(grid_dict:dict, grid_loc, grid_size)->list:
     return r_list
 
 
-def get_midpoint(object_list):
+def get_midpoint2d(object_list):
     if len(object_list) == 0:
         return None
     x_avg = 0.0
@@ -51,6 +51,15 @@ def get_midpoint(object_list):
     x_avg /= len(object_list)
     y_avg /= len(object_list)
     return np.array([x_avg, y_avg])
+
+
+def get_midpoint(object_list):
+    if len(object_list) == 0:
+        return None
+    avg_vec = np.zeros(3)
+    for obj in object_list:
+        avg_vec += obj.pt
+    return avg_vec/len(object_list)
 
 
 def get_max_outlier(object_list, mid_point):
@@ -90,13 +99,13 @@ def evaluate_leftovers(grid_dict, max_per_grid, finished_list, grid_size, max_cu
             continue
         neighbor_list = get_neighbors(grid_dict, current[0], grid_size)
 
-        local_mid = get_midpoint(current[1])
+        local_mid = get_midpoint2d(current[1])
         local_radius = get_max_outlier(current[1], local_mid)
 
         for neighbor in neighbor_list:  # check if the neighbors can be added to our list
             if local_radius < max_cull / 2:  # if our radius already encapsulates the full grid square, we can't add anything
                 if len(current[1]) + len(neighbor[1]) <= max_per_grid:
-                    n_mid = get_midpoint(neighbor[1])
+                    n_mid = get_midpoint2d(neighbor[1])
                     n_rad = get_max_outlier(neighbor[1], n_mid)
                     mid_dist = np.linalg.norm(local_mid-n_mid)
                     if mid_dist+local_radius+n_rad <= max_cull:
@@ -133,20 +142,28 @@ def cluster_objects(object_list, grid_size, max_per_grid, max_cull):
     return finished_groups
 
 
-def generate_smd_for_cluster(cluster_list:list, model_map:dict)->list:
+def get_model_set(data_list: list)->set:
+    return set(entry.mdl_str for entry in data_list)
+
+
+def generate_smd_for_cluster(cluster_list:list, model_map:dict)->(list, list):
     # model_map needs to map the .mdl files to a corresponding studio model data file name, located
     # in this directory, we will be using it to generate the model data.
+    offset_list = list()
     smd_map = dict((k, SMD(filename=model_map[k])) for k in model_map)  # pull immutable SMDs from our file system
     clustered_smds = list()
     for cluster in cluster_list:
         cluster_smd = SMD()
+        cluster_offset = get_midpoint(cluster)  # we use our local origins, for sake of runtime
         for object in cluster:
             #  each object has a .pt, .ang, and .mdl_str
             ang_mat = genRotMat(object.ang)
-            new_entries = [c.apply_transformation(ang_mat, object.pt) for c in smd_map[object.mdl_str]]
+            new_pos = object.pt-cluster_offset
+            new_entries = [c.apply_transformation(ang_mat, new_pos) for c in smd_map[object.mdl_str]]
             cluster_smd.triangles.extend(new_entries)
         clustered_smds.append(cluster_smd)
-    return clustered_smds
+        offset_list.append(cluster_offset)
+    return clustered_smds, offset_list
 
 
 def draw_cluster_image(cluster_set, grid_size):
@@ -171,13 +188,9 @@ def draw_cluster_image(cluster_set, grid_size):
         brush.line(horizontal_data)  # draw horizontal
         brush.line(vertical_data)  # draw vertical
 
-
-
     siv.save('cluster_debug.png')
     # 32768^2
     # 1024x1024
-
-
 
 
 def get_max_l(data_dict):
@@ -192,6 +205,7 @@ def get_max_l(data_dict):
 data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
 '''5792 is roughly sqrt(4096^2 + 4096^2), this is the max culling radius
 enforced by the grids.'''
+print(get_model_set(data))
 d = cluster_objects(data, 4096, 32, 5792)
 #print(get_max_l(d))
 print(len(d))
