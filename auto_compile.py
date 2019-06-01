@@ -1,10 +1,13 @@
 import subprocess
 import os
 import shutil
+import vmf_reader
 import re
 import time
 from tile_script import genTiledSMD
-import SMD
+from SMD import *
+from QC import *
+from batch_script import *
 studiomdlpath = 'C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Source\\bin\studiomdl.exe'
 gamepath = 'C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Source\cstrike'
 
@@ -72,7 +75,7 @@ def autoTileFile(newName, qcfpath, basesmdpath, dim, spacing):
         if x is not 'dir':
             base = SMD.SMD(smd_paths['dir']+smd_paths[x])
             data = genTiledSMD(base, dim, spacing, skinlist)
-            data.write(target_dir+'/'+newName+'_'+x)
+            data.write_to_file(target_dir + '/' + newName + '_' + x)
             if x is 'mesh' and not smd_paths['ref']:
                 new_ref = open(target_dir+'/'+newName+'_ref', 'w')
                 new_ref.write(data.getsmdstring())
@@ -128,6 +131,18 @@ def getSkinsFromQC(qcpath):
             reading = False
     r_list = list(filter(lambda x: x!='',lns))
     return r_list
+
+
+def compile_from_data(qc: QC, ref_smd: SMD, phys_smd: SMD):
+    temp_qc_path = os.getcwd()+"/temp/temp_qc"
+    temp_phys_smd = os.getcwd()+"/temp/temp_phys"
+    temp_ref_smd = os.getcwd()+"/temp/temp_ref"
+    cmd = '"' + studiomdlpath + '"' + ' -game "' + gamepath + '" -nop4 -r "' + temp_qc_path + '"'
+    qc.write_to_file(temp_qc_path)
+    ref_smd.write_to_file(temp_ref_smd)
+    phys_smd.write_to_file(temp_phys_smd)
+    print(subprocess.call(cmd))
+
 
 def autoCompile(qcpath):
     #  we want to copy the material files to the appropriate folder in our game
@@ -195,3 +210,32 @@ def compile_batch(qcname, smdname, modelname):
                  128)
 
 #compile_batch('facade3.qc', 'facade3_mesh.smd', 'window06')
+
+data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
+d = cluster_objects(data, 4096, 32, 5792)
+ref_smd_list, offset_list = generate_smd_for_cluster(d, {'models/ost/fir_tree_4.mdl': 'decomp/fir_tree_4_reference.smd',
+                                                         'models/ost/fir_tree_2.mdl': 'decomp/fir_tree_3_reference.smd',
+                                                         'models/ost/fir_tree_3.mdl': 'decomp/fir_tree_2_reference.smd',
+                                                         'models/ost/fir_tree_1.mdl': 'decomp/fir_tree_1_reference.smd'})
+phys_smd_list, _ = generate_smd_for_cluster(d, {'models/ost/fir_tree_4.mdl': 'decomp/fir_tree_4_physics.smd',
+                                                         'models/ost/fir_tree_2.mdl': 'decomp/fir_tree_3_physics.smd',
+                                                         'models/ost/fir_tree_3.mdl': 'decomp/fir_tree_2_physics.smd',
+                                                         'models/ost/fir_tree_1.mdl': 'decomp/fir_tree_1_physics.smd'})
+qc_list = [QC() for entry in ref_smd_list]
+index = 0
+for qc in qc_list:
+    qc.modelname = "ost/cluster_"+str(index)+".mdl"
+    qc.body["studio_path"] = "temp_ref.smd"
+    qc.body["title"] = "cluster"+str(index)
+    qc.surfaceprop = "wood"
+    qc.cdmaterials.append("models\\ost\\foliage\\")
+    qc.sequence[0]["title"] = "idle"
+    qc.sequence[0]["studio_path"] = "temp_ref.smd"
+    qc.collision_model["studio_path"] = "temp_phys.smd"
+    index += 1
+
+
+compile_from_data(qc_list[8], ref_smd_list[8], phys_smd_list[8])
+
+for i in range(len(offset_list)):
+    print("CLUSTER"+str(i)+" ORIGIN:"+str(offset_list[i]))

@@ -1,0 +1,20 @@
+VertexLitGeneric
+{
+	$treesway 1
+	
+	$treeswayheight						700.0
+	$treeswaystartheight				0.0
+	$treeswayradius						80.0
+	$treeswaystartradius				0.05
+	$treeswayspeed						0.2
+	$treeswaystrength					1
+	$treeswayscrumblespeed				0.25
+	$treeswayscrumblestrength			10
+	$treeswayscrumblefrequency			16.0
+	$treeswayfalloffexp					2.0
+	$treeswayscrumblefalloffexp			1.0
+	$treeswayspeedhighwindmultiplier	2.0
+	$treeswayspeedlerpstart				4.0
+	$treeswayspeedlerpend				8.0	
+	$treeswaystatic						1
+}

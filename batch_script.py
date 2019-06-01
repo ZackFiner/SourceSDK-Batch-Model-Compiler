@@ -146,7 +146,7 @@ def get_model_set(data_list: list)->set:
     return set(entry.mdl_str for entry in data_list)
 
 
-def generate_smd_for_cluster(cluster_list:list, model_map:dict)->(list, list):
+def generate_smd_for_cluster(cluster_list: list, model_map: dict)->(list, list):
     # model_map needs to map the .mdl files to a corresponding studio model data file name, located
     # in this directory, we will be using it to generate the model data.
     offset_list = list()
@@ -159,10 +159,12 @@ def generate_smd_for_cluster(cluster_list:list, model_map:dict)->(list, list):
             #  each object has a .pt, .ang, and .mdl_str
             ang_mat = genRotMat(object.ang)
             new_pos = object.pt-cluster_offset
-            new_entries = [c.apply_transformation(ang_mat, new_pos) for c in smd_map[object.mdl_str]]
+            new_entries = [c.apply_transformation(ang_mat, new_pos) for c in smd_map[object.mdl_str].triangles]
             cluster_smd.triangles.extend(new_entries)
         clustered_smds.append(cluster_smd)
         offset_list.append(cluster_offset)
+        cluster_smd.sequence = smd_map[object.mdl_str].sequence
+        cluster_smd.nodes = smd_map[object.mdl_str].nodes
     return clustered_smds, offset_list
 
 
@@ -177,8 +179,8 @@ def draw_cluster_image(cluster_set, grid_size):
         cluster_color = new_color()
         for point in cluster:
             our_origin = point.pt[:2]  # np array of dim 3
-            our_origin = (our_origin/32_768)*1024 + np.array([512,512])
-            brush.ellipse([(our_origin[0], our_origin[1]),(our_origin[0]+10, our_origin[1]+10)], fill=(cluster_color[0],cluster_color[1],cluster_color[2]))
+            our_origin = (our_origin/32_768)*1024 + np.array([512, 512])
+            brush.ellipse([(our_origin[0], our_origin[1]), (our_origin[0]+10, our_origin[1]+10)], fill=(cluster_color[0],cluster_color[1],cluster_color[2]))
 
     num_lines = int(32_768/grid_size) - 1
     px_size = 1024/(num_lines+1)

@@ -124,14 +124,14 @@ class SMD:
         r_str += '\nend'
         return r_str
 
-    def write(self, filepath):
+    def write_to_file(self, filepath):
         r_str = self.getsmdstring()
         f = open(filepath+'.smd', 'w')
         f.write(r_str)
         f.close()
 
 d = SMD('facade2_mesh.smd')
-d.write('newmd')
+d.write_to_file('newmd')
 #print(len(d.triangles))
 #print("T")
 

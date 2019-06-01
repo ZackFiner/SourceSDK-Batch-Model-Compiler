@@ -14,7 +14,7 @@ class QC:
         concat_list = [
                  '$modelname\t"',self.modelname,'"\n',
                  '$body ',self.body["title"],'\t"'+self.body["studio_path"],'"\n',
-                ('$static_prop\n' if self.static_prop else ''),
+                ('$staticprop\n' if self.static_prop else ''),
                  '$surfaceprop\t',self.surfaceprop,'\n',
                  '$cdmaterials\t']
         concat_list.extend([' "'+path+'"' for path in self.cdmaterials])
@@ -27,8 +27,11 @@ class QC:
         r_str = ''.join(concat_list)
         return r_str
 
-    def write_to_file(self, filename):
-        pass
+    def write_to_file(self, filepath):
+        r_str = self.get_qc_string()
+        f = open(filepath + '.qc', 'w')
+        f.write(r_str)
+        f.close()
 
 n = QC()
 print(n.get_qc_string())
