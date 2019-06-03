@@ -211,8 +211,12 @@ def compile_batch(qcname, smdname, modelname):
 
 #compile_batch('facade3.qc', 'facade3_mesh.smd', 'window06')
 
-data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
-d = cluster_objects(data, 4096, 32, 5792)
+#data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
+d = [vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Flat_a"),
+     vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Flat_b"),
+     vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Uphill_a"),
+     vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Uphill_b")
+     ]
 ref_smd_list, offset_list = generate_smd_for_cluster(d, {'models/ost/fir_tree_4.mdl': 'decomp/fir_tree_4_reference.smd',
                                                          'models/ost/fir_tree_2.mdl': 'decomp/fir_tree_3_reference.smd',
                                                          'models/ost/fir_tree_3.mdl': 'decomp/fir_tree_2_reference.smd',
@@ -223,19 +227,20 @@ phys_smd_list, _ = generate_smd_for_cluster(d, {'models/ost/fir_tree_4.mdl': 'de
                                                          'models/ost/fir_tree_1.mdl': 'decomp/fir_tree_1_physics.smd'})
 qc_list = [QC() for entry in ref_smd_list]
 index = 0
+name_list = ["cluster_flat_a", "cluster_flat_b", "cluster_slope_a", "cluster_slope_b"]
 for qc in qc_list:
-    qc.modelname = "ost/cluster_"+str(index)+".mdl"
+    qc.modelname = "ost/"+name_list[index]+".mdl"
     qc.body["studio_path"] = "temp_ref.smd"
     qc.body["title"] = "cluster"+str(index)
     qc.surfaceprop = "wood"
-    qc.cdmaterials.append("models\\ost\\foliage\\")
+    qc.cdmaterials.append("models\\ost\\foliage\\cluster")
     qc.sequence[0]["title"] = "idle"
     qc.sequence[0]["studio_path"] = "temp_ref.smd"
     qc.collision_model["studio_path"] = "temp_phys.smd"
     index += 1
 
-
-compile_from_data(qc_list[8], ref_smd_list[8], phys_smd_list[8])
+for i in range(len (d)):
+    compile_from_data(qc_list[i], ref_smd_list[i], phys_smd_list[i])
 
 for i in range(len(offset_list)):
     print("CLUSTER"+str(i)+" ORIGIN:"+str(offset_list[i]))

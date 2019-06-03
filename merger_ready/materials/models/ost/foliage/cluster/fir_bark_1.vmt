@@ -1,0 +1,10 @@
+patch
+{
+	include "materials/models/ost/foliage/tree_sway.vmt"
+
+	insert
+	{
+			"$basetexture"			"models/ost/foliage/fir_bark_1"
+			"$FlashlightNoLambert"	"1"
+	}
+}
