@@ -212,35 +212,34 @@ def compile_batch(qcname, smdname, modelname):
 #compile_batch('facade3.qc', 'facade3_mesh.smd', 'window06')
 
 #data = vmf_reader.get_batch_points_by_group("gm_ost1.vmf", group_name="Flora Clumped")
-d = [vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Flat_a"),
-     vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Flat_b"),
-     vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Uphill_a"),
-     vmf_reader.get_batch_points_by_group("gm_ost.vmf", group_name="Uphill_b")
+d = [vmf_reader.get_batch_points_by_group("gm_vyten_tree_dev.vmf", group_name="group_03 (32 Trees)"),
+     vmf_reader.get_batch_points_by_group("gm_vyten_tree_dev.vmf", group_name="group_04 (42 Trees)")
      ]
-ref_smd_list, offset_list = generate_smd_for_cluster(d, {'models/ost/fir_tree_4.mdl': 'decomp/fir_tree_4_reference.smd',
-                                                         'models/ost/fir_tree_2.mdl': 'decomp/fir_tree_3_reference.smd',
-                                                         'models/ost/fir_tree_3.mdl': 'decomp/fir_tree_2_reference.smd',
-                                                         'models/ost/fir_tree_1.mdl': 'decomp/fir_tree_1_reference.smd'})
-phys_smd_list, _ = generate_smd_for_cluster(d, {'models/ost/fir_tree_4.mdl': 'decomp/fir_tree_4_physics.smd',
-                                                         'models/ost/fir_tree_2.mdl': 'decomp/fir_tree_3_physics.smd',
-                                                         'models/ost/fir_tree_3.mdl': 'decomp/fir_tree_2_physics.smd',
-                                                         'models/ost/fir_tree_1.mdl': 'decomp/fir_tree_1_physics.smd'})
+print("groups located")
+ref_smd_list, offset_list = generate_smd_for_cluster(d, {'models/foliage/pine_2m.mdl': 'decomp/pine_2m_reference.smd',
+                                                         'models/foliage/pine_3m.mdl': 'decomp/pine_3m_reference.smd',
+                                                         'models/foliage/pine_7m.mdl': 'decomp/pine_7m_reference.smd',
+                                                         'models/foliage/pine_9m.mdl': 'decomp/pine_9m_reference.smd'})
+phys_smd_list, _ = generate_smd_for_cluster(d, {'models/foliage/pine_2m.mdl': 'decomp/pine_2m_physics.smd',
+                                                         'models/foliage/pine_3m.mdl': 'decomp/pine_3m_physics.smd',
+                                                         'models/foliage/pine_7m.mdl': 'decomp/pine_7m_physics.smd',
+                                                         'models/foliage/pine_9m.mdl': 'decomp/pine_9m_physics.smd'})
 qc_list = [QC() for entry in ref_smd_list]
 index = 0
-name_list = ["cluster_flat_a", "cluster_flat_b", "cluster_slope_a", "cluster_slope_b"]
+name_list = ["group_01", "group_02"]
 for qc in qc_list:
-    qc.modelname = "ost/"+name_list[index]+".mdl"
+    qc.modelname = "vyten/"+name_list[index]+".mdl"
     qc.body["studio_path"] = "temp_ref.smd"
     qc.body["title"] = "cluster"+str(index)
     qc.surfaceprop = "wood"
-    qc.cdmaterials.append("models\\ost\\foliage\\cluster")
+    qc.cdmaterials.append("models\\vyten\\foliage\\cluster")
     qc.sequence[0]["title"] = "idle"
     qc.sequence[0]["studio_path"] = "temp_ref.smd"
     qc.collision_model["studio_path"] = "temp_phys.smd"
     index += 1
-
+print("qc generated")
 for i in range(len (d)):
     compile_from_data(qc_list[i], ref_smd_list[i], phys_smd_list[i])
-
+print("models compiled")
 for i in range(len(offset_list)):
     print("CLUSTER"+str(i)+" ORIGIN:"+str(offset_list[i]))

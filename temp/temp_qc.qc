@@ -1,7 +1,7 @@
-$modelname	"ost/cluster_slope_b.mdl"
-$body cluster3	"temp_ref.smd"
+$modelname	"vyten/group_02.mdl"
+$body cluster1	"temp_ref.smd"
 $staticprop
 $surfaceprop	wood
-$cdmaterials	 "models\ost\foliage\cluster"
+$cdmaterials	 "models\vyten\foliage\cluster"
 $sequence idle	"temp_ref.smd"
 $collisionmodel "temp_phys.smd"	{ $concave } 

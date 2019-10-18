@@ -1,6 +1,0 @@
-"VertexlitGeneric"
-{
-	"$basetexture"	"nature\rockwall001a"
-	"$bumpmap"		"nature\rockwall001a_normal"
-	"$detail"		"detail\rock_detail_01"
-}
