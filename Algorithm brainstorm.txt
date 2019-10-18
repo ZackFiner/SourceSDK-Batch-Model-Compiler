@@ -1,0 +1,52 @@
+Max grid is 32,768
+
+
+Method 1 with help from Jake:
+1. Group based on grid of squares, let's ay 4096x4096
+2. Grid's that overflow are added to the finished list (so if there are say
+65 trees in one square, we randomly choose 32 trees, group it, and repeat this until
+there are less than 32 trees in the grid)
+3. This leaves less than 32 grids in each square.
+4. Next we look at each grid square that has trees in it, and check it's neighbors to see if we can
+group them together:
+	a. first we make sure that the trees in this square plus that square is less than
+	the limit of trees per group
+	b. next we calculate our midpoint and maximum outlier, and the other squares midpoint
+	and maxmimum outlier. using this information, we can determine if adding the other squares
+	tree to our group will violate our radius contract.
+	c. repeat until the first condition (a) cannot be met, or we run out of neighbor squares.
+
+=CONTRACT=
+No tree in each grid can be greater than 4096 units from each other. There can be no more than
+32 trees per model.
+
+Time complexity:
+n - number of trees in the map
+m - max number of trees per cluster
+d - max distance between each tree in the cluster
+y - max map size
+
+To assign each tree to a grid group, we must inspect every single tree in the map, calculate what
+grid square it falls in, and assign it to a bucket - O(n)
+
+Next, we look at each grid square, and calculate what trees can fall into a group and what qualifies as
+too small, needing further inspection, since we do not revisit any trees in during this phase, O(n)
+
+Next, we have k trees remaining on the map, k <= n at this point (ofcourse), worst case is k=n because this
+is where things get weird. in our previous step, we broke trees up into grids of dxd size. we know that there
+are less than m trees in each grid square. as such, we can surmize k:
+k <= (y/d)^2 * m
+
+Now, up to this point we're ignoring empty squares, so lets make j the number of grid squares with trees
+in them.
+
+Next, we are only going to look at the immediate neighbors of these squares, which be at most 8 different squares.
+thus, for the j squares we have, we are checking 8 squares per square, so we will have j*8 instances of square
+comparison.
+
+In order to compare squares, we need to calculate the mid point of each tree in the square, and then we
+need to find the maximum outlier. The first part of this is O(m) and so is the second, so overall O(m)
+per square comparison.
+
+Since there are j*8 comparisons, there will be at most O(j*8*m) operations. j will be at max y/d,
+so we have O((y/d)*8*m), where m <= 32
