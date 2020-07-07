@@ -40,7 +40,7 @@ class quaternion:
             euler_param.qy = o[0]
             euler_param.qz = o[1]
             euler_param.qw = o[2]
-            return self*euler_param
+            return self*euler_param  # don't we need a conjugate here?
 
     def getEulerParam(self):
         return np.array([self.qy, self.qz, self.qw])
