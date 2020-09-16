@@ -1,13 +1,13 @@
 import subprocess
 import os
 import shutil
-import vmf_reader
 import re
 import time
-from tile_script import genTiledSMD
-from SMD import *
-from QC import *
-from batch_script import *
+import src.vmf_reader as vmf_reader
+from .tile_script import genTiledSMD
+from .SMD import *
+from .QC import *
+from .batch_script import *
 studiomdlpath = 'C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Source\\bin\studiomdl.exe'
 gamepath = 'C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Source\cstrike'
 

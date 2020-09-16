@@ -1,4 +1,4 @@
-from SMD import SMD, VertexData, TriangleData, TimeFrame, replacemat
+from .SMD import SMD, VertexData, TriangleData, TimeFrame, replacemat
 import random
 import numpy as np
 

@@ -1,10 +1,10 @@
-import vmf_reader
 import numpy as np
+import src.vmf_reader as vmf_reader
 from PIL import Image, ImageDraw
 import random
 import math
-from transform import *
-from SMD import *
+from .transform import *
+from .SMD import *
 
 def truncate(n, k):
     return int(math.floor(n/k)*k + (k/2))
