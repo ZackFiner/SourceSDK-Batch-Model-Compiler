@@ -130,8 +130,8 @@ class SMD:
         f.write(r_str)
         f.close()
 
-d = SMD('facade2_mesh.smd')
-d.write_to_file('newmd')
+#d = SMD('facade2_mesh.smd')
+#d.write_to_file('newmd')
 #print(len(d.triangles))
 #print("T")
 

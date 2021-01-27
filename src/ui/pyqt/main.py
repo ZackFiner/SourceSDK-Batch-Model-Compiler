@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import *
 from src.SMD import SMD
 import os
 import shutil
+import subprocess
 import sys
 
 
@@ -13,7 +14,7 @@ def put_file_in_dict(parent, text_dict, keyword):
 
     return func
 
-
+import re
 def generate_temp_smd_files(mdl_path):
     tmp_path = './tmp_smd_files'
     try:
@@ -22,13 +23,27 @@ def generate_temp_smd_files(mdl_path):
         shutil.rmtree(tmp_path)
         os.mkdir(tmp_path)
 
-    os.system('Crowbar.exe -p "{mdl_path}" -o "{tmp_path}"'.format(mdl_path=mdl_path, tmp_path=tmp_path))
+    os.system('Crowbar.exe -p "{mdl_path}" -o "%CD%/tmp_smd_files"'.format(mdl_path=mdl_path))
+    name = re.search(r'(?:[/\\])(?P<name>[^/\\]+)(?:[.]mdl)', mdl_path).groupdict()['name']
 
-    # crowbar exports smds as {model file name}_physics/reference/<somebody group name here>
-    # the complication will be the bodygroup name thing, because that'll vary per model.
-    # crowbar also exports a generic qc as {model file name}.qc
-    # alternatively, you might be able to just use the reference model
+    # crowbar exports smds as based on the qc it generates
+    # this means that pulling the appropriate .smd out is a bit more complicated than it might
+    # seem: you need to read the qc and determine what the main refernece model is, as well as
+    # what body groups need to be pulled
 
+    # the code above does work (assuming Crowbar.exe is placed in the same directory as this file)
+    # but more work will need to be done in terms of pulling the right data out
+
+    r_dict = dict()
+
+    r_dict["mesh_smd"] = SMD("{tmp_path}/{name}_reference.smd".format(tmp_path=tmp_path, name=name))
+    r_dict["phys_smd"] = SMD("{tmp_path}/{name}_physics.smd".format(tmp_path=tmp_path, name=name))
+    r_dict["ref_smd"] = SMD("{tmp_path}/{name}_reference.smd".format(tmp_path=tmp_path, name=name))
+
+    # now cleanup our file system
+    shutil.rmtree(tmp_path)
+
+    return r_dict
 
 
 class SMDFileSelector:
@@ -106,6 +121,11 @@ class MdlSelector(QWidget):
         main_layout.addWidget(self.file_path_area)
         self.setLayout(main_layout)
 
+    def getSMDs(self):
+        selected_mdl_path = self.file_paths['model_mdl'].text()
+        r_dict = generate_temp_smd_files(selected_mdl_path)
+        return r_dict
+
 
 
 class MainWindow(QMainWindow):
@@ -125,10 +145,17 @@ class MainWindow(QMainWindow):
         smd_selection_tabs.addTab(SMDSelector(), 'Select SMD Files')
         smd_selection_tabs.addTab(MdlSelector(), 'Select Mdl File')
         layout.addWidget(smd_selection_tabs, 0, 0)
+        self.process_button = QPushButton('Go')
+        self.process_button.clicked.connect(self.do_something)
+        layout.addWidget(self.process_button, 1, 0)
+
         self.cw.setLayout(layout)
 
     def do_something(self):
-        print(self.smd_selector.currentIndex())
+        #smd_tab = self.smd_selector.currentWidget()
+        #smd_dict = smd_tab.getSMDs()
+        #print(smd_dict['mesh_smd'].getsmdstring())
+        print("pressed")
 
     def closeEvent(self, e):
         pass
