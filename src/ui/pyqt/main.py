@@ -1,4 +1,7 @@
 from PyQt5.QtWidgets import *
+from src.SMD import SMD
+import os
+import shutil
 import sys
 
 
@@ -11,7 +14,29 @@ def put_file_in_dict(parent, text_dict, keyword):
     return func
 
 
-class SMDSelector(QWidget):
+def generate_temp_smd_files(mdl_path):
+    tmp_path = './tmp_smd_files'
+    try:
+        os.mkdir(tmp_path)
+    except FileExistsError:
+        shutil.rmtree(tmp_path)
+        os.mkdir(tmp_path)
+
+    os.system('Crowbar.exe -p "{mdl_path}" -o "{tmp_path}"'.format(mdl_path=mdl_path, tmp_path=tmp_path))
+
+    # crowbar exports smds as {model file name}_physics/reference/<somebody group name here>
+    # the complication will be the bodygroup name thing, because that'll vary per model.
+    # crowbar also exports a generic qc as {model file name}.qc
+    # alternatively, you might be able to just use the reference model
+
+
+
+class SMDFileSelector:
+    def getSMDs(self) -> dict:
+        pass
+
+
+class SMDSelector(QWidget, SMDFileSelector):
     def __init__(self, *args, **kwargs):
         # pop any custom arguments up here
         # self.some_internal = kwargs.pop('some_internal')
@@ -45,6 +70,18 @@ class SMDSelector(QWidget):
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.file_path_area)
         self.setLayout(main_layout)
+
+    def getSMDs(self):
+        r_dict = dict()
+        mesh_path = self.file_paths['mesh_smd'].text()
+        phys_path = self.file_paths['phys_smd'].text()
+        ref_path = self.file_paths['ref_smd'].text()
+
+        r_dict['mesh'] = SMD(mesh_path)
+        r_dict['phys'] = SMD(phys_path)
+        r_dict['ref'] = SMD(ref_path)
+
+        return r_dict
 
 
 class MdlSelector(QWidget):
