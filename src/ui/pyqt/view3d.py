@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 import OpenGL.GL.shaders as shaders
 from OpenGL.GLU import *
+import glm
 from PyQt5.QtWidgets import *
 from src.SMD import SMD
 from PyQt5.QtOpenGL import *
@@ -19,7 +20,7 @@ def flatten_triangle_data(triangles):
             tx = vert.texCoord
             p = vert.pos
             n = vert.norm
-            verts.append([p[0], p[1], p[2], n[0], n[1], n[2], tx[0], tx[1]]) #
+            verts.append([p[0], p[2], p[1], n[0], n[2], n[1], tx[0], tx[1]]) #
             inds.append(ind)
             ind += 1
 
@@ -96,10 +97,15 @@ class TexturedSMD:
     def draw(self):
         pass
 
-    def drawWireframe(self, fallback_shader=None):
+    def set_transform(self, shader, transform):
+        uniform_location = glGetUniformLocation(shader, "transform")
+        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, glm.value_ptr(transform))
+
+    def drawWireframe(self, fallback_shader=None, transform=glm.identity(glm.mat4)):
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)  # enable wireframe drawing mode
         for _, vbo in self.shaded_vbos.items():
             glUseProgram(fallback_shader)
+            self.set_transform(fallback_shader, transform)
             vbo.bind()  # bind the buffer
             #glDrawArrays(GL_TRIANGLES, 0, vbo.count)
             glDrawElements(GL_TRIANGLES, vbo.count, GL_UNSIGNED_INT, None)  # last parameter must be None
@@ -113,27 +119,27 @@ class SMDPreviewWindow(QGLWidget):
         self.setMinimumSize(640, 480)
         self.raw_smds = SMDs
         self.render_objects = list()
+        self.viewport_transform = dict()
 
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the color buffer and depth buffer (blank canvas)
 
-        glPushMatrix()
-        glTranslatef(0.0, 0.0, 0.0)
         for object in self.render_objects:
-            object.drawWireframe(self.default_shader_program)
+            object.drawWireframe(self.default_shader_program, self.viewport_transform['state'])
 
-        glPopMatrix()
         # we'll render a wireframe for now, since we can't import textures yet
 
     def resizeGL(self, width, height):
         glViewport(0,0, width, height)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        aspect = width/float(height)
+        aspect = width / float(height)
+        identity = glm.mat4()
+        perspective = glm.perspective(45.0, aspect, 0.1, 100.0)
+        camera = glm.lookAt(glm.vec3(50.0,50.0,50.0), glm.vec3(0.0,0.0,0.0), glm.vec3(0.0,1.0,0.0))
 
-        gluPerspective(45.0, aspect, 0.1, 100.0)
-        gluLookAt(50.0,50.0,50.0,0.0,0.0,0.0,0.0,1.0,0.0)
-        glMatrixMode(GL_MODELVIEW)
+        self.viewport_transform['identity'] = identity
+        self.viewport_transform['camera'] = camera
+        self.viewport_transform['projection'] = perspective
+        self.viewport_transform['state'] = perspective*camera*identity
 
     def initializeGL(self):
         glClearColor(0.0, 0.0, 1.0, 1.0)
@@ -141,21 +147,27 @@ class SMDPreviewWindow(QGLWidget):
         self.render_objects = [TexturedSMD(smd) for smd in self.raw_smds]
         self.default_vert = shaders.compileShader(
             """
+            #version 430 core
+            
             layout (location = 0) in vec3 aPos;
             layout (location = 1) in vec3 aNorm;
             layout (location = 2) in vec2 aTexCoord;
-
+            
+            uniform mat4 transform;
             out vec2 tCord;
     
             void main()
             {
-                gl_Position = gl_ModelViewProjectionMatrix  * vec4(aPos, 1.0f);
+                gl_Position = transform  * vec4(aPos, 1.0f);
                 tCord = aTexCoord;
             }
             """, GL_VERTEX_SHADER)
 
+
+
         self.default_frag = shaders.compileShader(
             """
+            #version 430 core
             void main() {
                 gl_FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f); // plain red
             }
