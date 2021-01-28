@@ -3,6 +3,7 @@ import OpenGL.GL.shaders as shaders
 from OpenGL.GLU import *
 import glm
 from PyQt5.QtWidgets import *
+from PyQt5 import QtCore
 from src.SMD import SMD
 from PyQt5.QtOpenGL import *
 import numpy as np
@@ -120,6 +121,13 @@ class SMDPreviewWindow(QGLWidget):
         self.raw_smds = SMDs
         self.render_objects = list()
         self.viewport_transform = dict()
+        self.setMouseTracking(True)  # we need this for drag, zoom, and pan
+
+        self.camera_lookdir = glm.vec3(1.0,0.0,0.0)
+        self.camera_up = glm.vec3(0.0,1.0,0.0)
+        self.camera_zoom = 50.0
+        self.center_pos = glm.vec3(0.0)
+
 
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the color buffer and depth buffer (blank canvas)
@@ -134,12 +142,63 @@ class SMDPreviewWindow(QGLWidget):
         aspect = width / float(height)
         identity = glm.mat4()
         perspective = glm.perspective(45.0, aspect, 0.1, 100.0)
-        camera = glm.lookAt(glm.vec3(50.0,50.0,50.0), glm.vec3(0.0,0.0,0.0), glm.vec3(0.0,1.0,0.0))
+        camera = glm.lookAt(self.camera_lookdir*self.camera_zoom + self.center_pos, self.center_pos, self.camera_up)
 
         self.viewport_transform['identity'] = identity
         self.viewport_transform['camera'] = camera
         self.viewport_transform['projection'] = perspective
         self.viewport_transform['state'] = perspective*camera*identity
+        self.dragging = False
+        self.mouse_x = -1
+        self.mouse_y = -1
+
+    def mousePressEvent(self, event):
+        if event.buttons() & QtCore.Qt.LeftButton and not self.dragging:
+            self.dragging = True
+            self.mouse_x = event.globalPos().x()
+            self.mouse_y = event.globalPos().y()
+
+    def mouseReleaseEvent(self, event):
+        if not event.buttons() & QtCore.Qt.LeftButton:
+            self.dragging = False
+
+    def rotate_camera(self, dX, dY):
+        right = glm.normalize(glm.cross(self.camera_lookdir, self.camera_up))
+        rotation = glm.rotate(glm.rotate(glm.mat4(), dY, right), dX, glm.vec3(0,1,0))
+        self.camera_lookdir = glm.vec3(glm.vec4(self.camera_lookdir, 1.0) * rotation)
+        self.camera_up = glm.vec3(glm.vec4(self.camera_up, 1.0) * rotation)
+
+        self.refresh_state_matrix()
+
+    def refresh_camera_matrix(self):
+        self.viewport_transform['camera'] = glm.lookAt(self.camera_lookdir * self.camera_zoom + self.center_pos,
+                                                       self.center_pos,
+                                                       self.camera_up)
+
+    def refresh_state_matrix(self):
+        self.refresh_camera_matrix()
+        self.viewport_transform['state'] = self.viewport_transform['projection'] * \
+                                           self.viewport_transform['camera'] * \
+                                           self.viewport_transform['identity']
+    def pan_camera(self, dX, dY):
+        right = glm.normalize(glm.cross(self.camera_lookdir, self.camera_up))
+        self.center_pos += self.camera_up*dY + right*dX
+        self.refresh_state_matrix()
+
+
+    def mouseMoveEvent(self, event):
+        if self.dragging:
+            nX = event.globalPos().x()
+            nY = event.globalPos().y()
+            dX = nX - self.mouse_x
+            dY = nY - self.mouse_y
+            self.mouse_x = nX
+            self.mouse_y = nY
+            if event.buttons() & QtCore.Qt.MiddleButton:
+                self.pan_camera(dX, dY)
+            else:
+                self.rotate_camera(dX*0.05, -dY*0.05)
+            self.update()
 
     def initializeGL(self):
         glClearColor(0.0, 0.0, 1.0, 1.0)
