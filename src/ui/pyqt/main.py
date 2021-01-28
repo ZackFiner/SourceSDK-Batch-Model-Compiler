@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import *
 from src.SMD import SMD
-import os
+import os, glob
 import shutil
+from src.ui.pyqt.view3d import *
 import subprocess
 import sys
 
@@ -24,7 +25,7 @@ def generate_temp_smd_files(mdl_path):
         os.mkdir(tmp_path)
 
     os.system('Crowbar.exe -p "{mdl_path}" -o "%CD%/tmp_smd_files"'.format(mdl_path=mdl_path))
-    name = re.search(r'(?:[/\\])(?P<name>[^/\\]+)(?:[.]mdl)', mdl_path).groupdict()['name']
+
 
     # crowbar exports smds as based on the qc it generates
     # this means that pulling the appropriate .smd out is a bit more complicated than it might
@@ -36,9 +37,9 @@ def generate_temp_smd_files(mdl_path):
 
     r_dict = dict()
 
-    r_dict["mesh_smd"] = SMD("{tmp_path}/{name}_reference.smd".format(tmp_path=tmp_path, name=name))
-    r_dict["phys_smd"] = SMD("{tmp_path}/{name}_physics.smd".format(tmp_path=tmp_path, name=name))
-    r_dict["ref_smd"] = SMD("{tmp_path}/{name}_reference.smd".format(tmp_path=tmp_path, name=name))
+    for file in glob.glob('{tmp_path}/*.smd'.format(tmp_path=tmp_path)):
+        name = re.search(r'(?:[/\\])(?P<name>[^/\\]+)(?:[.]mdl)', file).groupdict()['name']
+        r_dict[name] = SMD(file)
 
     # now cleanup our file system
     shutil.rmtree(tmp_path)
@@ -92,9 +93,9 @@ class SMDSelector(QWidget, SMDFileSelector):
         phys_path = self.file_paths['phys_smd'].text()
         ref_path = self.file_paths['ref_smd'].text()
 
-        r_dict['mesh'] = SMD(mesh_path)
-        r_dict['phys'] = SMD(phys_path)
-        r_dict['ref'] = SMD(ref_path)
+        r_dict['mesh_smd'] = SMD(mesh_path)
+        r_dict['phys_smd'] = SMD(phys_path)
+        r_dict['ref_smd'] = SMD(ref_path)
 
         return r_dict
 
@@ -127,7 +128,6 @@ class MdlSelector(QWidget):
         return r_dict
 
 
-
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -148,12 +148,13 @@ class MainWindow(QMainWindow):
         self.process_button = QPushButton('Go')
         self.process_button.clicked.connect(self.do_something)
         layout.addWidget(self.process_button, 1, 0)
-
+        self.preview_window = SMDPreviewWindow(SMDs=[SMD('./chair_office_reference.smd')])
+        layout.addWidget(self.preview_window, 0, 1)
         self.cw.setLayout(layout)
 
     def do_something(self):
-        #smd_tab = self.smd_selector.currentWidget()
-        #smd_dict = smd_tab.getSMDs()
+        smd_tab = self.smd_selector.currentWidget()
+        smd_dict = smd_tab.getSMDs()
         #print(smd_dict['mesh_smd'].getsmdstring())
         print("pressed")
 
