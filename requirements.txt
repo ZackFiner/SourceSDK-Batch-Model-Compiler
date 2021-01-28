@@ -1,5 +1,6 @@
 pyqt5>=5.9.2
-pyopengl
+PyOpenGL
+PyOpenGL_accelerate
 numpy
 Pillow
 PlyPlus

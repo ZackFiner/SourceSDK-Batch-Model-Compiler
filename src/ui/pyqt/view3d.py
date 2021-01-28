@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import *
 from src.SMD import SMD
 from PyQt5.QtOpenGL import *
 import numpy as np
+import ctypes
 
 
 def flatten_triangle_data(triangles):
@@ -18,11 +19,11 @@ def flatten_triangle_data(triangles):
             tx = vert.texCoord
             p = vert.pos
             n = vert.norm
-            verts.extend([p[0], p[1], p[2], n[0], n[1], n[2], tx[0], tx[1]])
+            verts.append([p[0], p[1], p[2], n[0], n[1], n[2], tx[0], tx[1]]) #
             inds.append(ind)
             ind += 1
 
-    return np.array(verts), np.array(inds)
+    return np.array(verts, dtype='float32'), np.array(inds, dtype='uint32')
 
 
 class SimpleVBO:
@@ -45,10 +46,10 @@ class SimpleVBO:
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.ebo)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.inds, GL_STATIC_DRAW)
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)  # our vertex pos is at index 0
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3, None)  # normal at index 1
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 6, None)  # texcoord at index 2
+        float_size = ctypes.sizeof(ctypes.c_float)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*float_size, ctypes.c_void_p(0))  # our vertex pos is at index 0
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*float_size, ctypes.c_void_p(3*float_size))  # normal at index 1
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*float_size, ctypes.c_void_p(6*float_size))  # texcoord at index 2
         glEnableVertexAttribArray(0)
         glEnableVertexAttribArray(1)
         glEnableVertexAttribArray(2)
@@ -63,9 +64,19 @@ class SimpleVBO:
 
     def bind(self):
         glBindVertexArray(self.vao)
+        # glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        # glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.ebo)
+        # glEnableVertexAttribArray(0)
+        # glEnableVertexAttribArray(1)
+        # glEnableVertexAttribArray(2)
+        # glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)  # our vertex pos is at index 0
+        # glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3, None)  # normal at index 1
+        # glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 6, None)  # texcoord at index 2
 
     def unbind(self):
         glBindVertexArray(0)
+        #glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+        #glBindBuffer(GL_ARRAY_BUFFER, 0)
 
 
 class TexturedSMD:
@@ -86,10 +97,11 @@ class TexturedSMD:
         pass
 
     def drawWireframe(self, fallback_shader=None):
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)  # enable wireframe drawing mode
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)  # enable wireframe drawing mode
         for _, vbo in self.shaded_vbos.items():
             glUseProgram(fallback_shader)
             vbo.bind()  # bind the buffer
+            #glDrawArrays(GL_TRIANGLES, 0, vbo.count)
             glDrawElements(GL_TRIANGLES, vbo.count, GL_UNSIGNED_INT, None)  # last parameter must be None
             vbo.unbind()
 
@@ -104,6 +116,7 @@ class SMDPreviewWindow(QGLWidget):
 
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the color buffer and depth buffer (blank canvas)
+
         glPushMatrix()
         glTranslatef(0.0, 0.0, 0.0)
         for object in self.render_objects:
@@ -112,37 +125,39 @@ class SMDPreviewWindow(QGLWidget):
         glPopMatrix()
         # we'll render a wireframe for now, since we can't import textures yet
 
+    def resizeGL(self, width, height):
+        glViewport(0,0, width, height)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        aspect = width/float(height)
+
+        gluPerspective(45.0, aspect, 0.1, 100.0)
+        gluLookAt(50.0,50.0,50.0,0.0,0.0,0.0,0.0,1.0,0.0)
+        glMatrixMode(GL_MODELVIEW)
+
     def initializeGL(self):
+        glClearColor(0.0, 0.0, 1.0, 1.0)
         glEnable(GL_DEPTH_TEST)  # backface full
         self.render_objects = [TexturedSMD(smd) for smd in self.raw_smds]
         self.default_vert = shaders.compileShader(
             """
-    
-            #version 430 core
             layout (location = 0) in vec3 aPos;
             layout (location = 1) in vec3 aNorm;
             layout (location = 2) in vec2 aTexCoord;
-    
-            uniform mat4 transform;
+
             out vec2 tCord;
     
             void main()
             {
-                gl_Position = transform * vec4(aPos, 1.0f);
+                gl_Position = gl_ModelViewProjectionMatrix  * vec4(aPos, 1.0f);
                 tCord = aTexCoord;
             }
             """, GL_VERTEX_SHADER)
 
         self.default_frag = shaders.compileShader(
             """
-    
-            #version 430 core
-            in vec2 tCord;
-            out vec4 FragCol;
-            //uniform sampler2D texture; // when we want to actually render the texture
-    
             void main() {
-                FragCol = vec4(1.0f, 1.0f, 1.0f, 1.0f); // plain white
+                gl_FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f); // plain red
             }
             """, GL_FRAGMENT_SHADER)
 
