@@ -141,34 +141,39 @@ class SMDPreviewWindow(QGLWidget):
         glViewport(0,0, width, height)
         aspect = width / float(height)
         identity = glm.mat4()
-        perspective = glm.perspective(45.0, aspect, 0.1, 100.0)
+        perspective = glm.perspective(45.0, aspect, 0.1, 1000.0)
         camera = glm.lookAt(self.camera_lookdir*self.camera_zoom + self.center_pos, self.center_pos, self.camera_up)
 
         self.viewport_transform['identity'] = identity
         self.viewport_transform['camera'] = camera
         self.viewport_transform['projection'] = perspective
         self.viewport_transform['state'] = perspective*camera*identity
-        self.dragging = False
+        self.dragging = set()
         self.mouse_x = -1
         self.mouse_y = -1
 
     def mousePressEvent(self, event):
-        if event.buttons() & QtCore.Qt.LeftButton and not self.dragging:
-            self.dragging = True
-            self.mouse_x = event.globalPos().x()
-            self.mouse_y = event.globalPos().y()
+        lbutton = event.buttons() & QtCore.Qt.LeftButton
+        mbutton = event.buttons() & QtCore.Qt.MiddleButton
+        if lbutton and 1 not in self.dragging:
+            self.dragging.add(1)
+
+        if mbutton and 2 not in self.dragging:
+            self.dragging.add(2)
+
+        self.mouse_x = event.globalPos().x()
+        self.mouse_y = event.globalPos().y()
+
 
     def mouseReleaseEvent(self, event):
-        if not event.buttons() & QtCore.Qt.LeftButton:
-            self.dragging = False
+        lbutton = event.buttons() & QtCore.Qt.LeftButton
+        mbutton = event.buttons() & QtCore.Qt.MiddleButton
 
-    def rotate_camera(self, dX, dY):
-        right = glm.normalize(glm.cross(self.camera_lookdir, self.camera_up))
-        rotation = glm.rotate(glm.rotate(glm.mat4(), dY, right), dX, glm.vec3(0,1,0))
-        self.camera_lookdir = glm.vec3(glm.vec4(self.camera_lookdir, 1.0) * rotation)
-        self.camera_up = glm.vec3(glm.vec4(self.camera_up, 1.0) * rotation)
+        if not lbutton:
+            self.dragging.discard(1)
 
-        self.refresh_state_matrix()
+        if not mbutton:
+            self.dragging.discard(2)
 
     def refresh_camera_matrix(self):
         self.viewport_transform['camera'] = glm.lookAt(self.camera_lookdir * self.camera_zoom + self.center_pos,
@@ -180,25 +185,45 @@ class SMDPreviewWindow(QGLWidget):
         self.viewport_transform['state'] = self.viewport_transform['projection'] * \
                                            self.viewport_transform['camera'] * \
                                            self.viewport_transform['identity']
+
+    def rotate_camera(self, dX, dY):
+        right = glm.normalize(glm.cross(self.camera_lookdir, self.camera_up))
+        rotation = glm.rotate(glm.rotate(glm.mat4(), dY, right), dX, glm.vec3(0,1,0))
+        self.camera_lookdir = glm.vec3(glm.vec4(self.camera_lookdir, 1.0) * rotation)
+        self.camera_up = glm.vec3(glm.vec4(self.camera_up, 1.0) * rotation)
+
+        self.refresh_state_matrix()
+
     def pan_camera(self, dX, dY):
         right = glm.normalize(glm.cross(self.camera_lookdir, self.camera_up))
         self.center_pos += self.camera_up*dY + right*dX
         self.refresh_state_matrix()
 
+    def zoom_camera(self, dZ):
+        self.camera_zoom = glm.max(self.camera_zoom + dZ, 0)
+        self.refresh_state_matrix()
 
     def mouseMoveEvent(self, event):
-        if self.dragging:
+        if len(self.dragging):
             nX = event.globalPos().x()
             nY = event.globalPos().y()
             dX = nX - self.mouse_x
             dY = nY - self.mouse_y
             self.mouse_x = nX
             self.mouse_y = nY
-            if event.buttons() & QtCore.Qt.MiddleButton:
-                self.pan_camera(dX, dY)
+            mbutton = event.buttons() & QtCore.Qt.MiddleButton
+            lbutton = event.buttons() & QtCore.Qt.LeftButton
+            if mbutton:
+                self.pan_camera(dX*0.5, dY*0.5)
             else:
                 self.rotate_camera(dX*0.05, -dY*0.05)
             self.update()
+
+    def wheelEvent(self, event):
+
+        dz = event.angleDelta()
+        self.zoom_camera(-dz.y()*0.1)
+        self.update()
 
     def initializeGL(self):
         glClearColor(0.0, 0.0, 1.0, 1.0)
