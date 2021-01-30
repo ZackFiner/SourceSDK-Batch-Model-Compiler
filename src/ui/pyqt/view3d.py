@@ -113,6 +113,17 @@ class TexturedSMD:
             vbo.unbind()
 
 
+class RenderContainer:
+    def __init__(self, smd, transforms=None, instances=None,  render=True):
+        self.smd = smd
+        self.render = render
+        self.transforms = transforms
+        self.instances = instances
+
+    def draw(self):
+        pass
+
+
 class SMDPreviewWindow(QGLWidget):
     def __init__(self, *args, **kwargs):
         SMDs = kwargs.pop('SMDs')
@@ -120,6 +131,8 @@ class SMDPreviewWindow(QGLWidget):
         self.setMinimumSize(640, 480)
         self.raw_smds = SMDs
         self.render_objects = list()
+        self.render_dict = dict() # this will be used to determine which objects should be rendered/what transformations
+
         self.viewport_transform = dict()
         self.setMouseTracking(True)  # we need this for drag, zoom, and pan
 
@@ -132,8 +145,9 @@ class SMDPreviewWindow(QGLWidget):
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the color buffer and depth buffer (blank canvas)
 
-        for object in self.render_objects:
-            object.drawWireframe(self.default_shader_program, self.viewport_transform['state'])
+        for idx, object in enumerate(self.render_objects):
+            if self.render_dict[idx].render:
+                object.drawWireframe(self.default_shader_program, self.viewport_transform['state'])
 
         # we'll render a wireframe for now, since we can't import textures yet
 
@@ -225,10 +239,20 @@ class SMDPreviewWindow(QGLWidget):
         self.zoom_camera(-dz.y()*0.1)
         self.update()
 
+    def toggle_render(self, idx, value):
+        self.render_dict[idx].render = value
+        self.update()
+
     def initializeGL(self):
         glClearColor(0.0, 0.0, 1.0, 1.0)
         glEnable(GL_DEPTH_TEST)  # backface full
-        self.render_objects = [TexturedSMD(smd) for smd in self.raw_smds]
+
+
+        for idx, smd in enumerate(self.raw_smds):
+            built_smd = TexturedSMD(smd)
+            self.render_objects.append(built_smd)
+            self.render_dict[idx] = RenderContainer(built_smd)
+
         self.default_vert = shaders.compileShader(
             """
             #version 430 core
@@ -258,3 +282,35 @@ class SMDPreviewWindow(QGLWidget):
             """, GL_FRAGMENT_SHADER)
 
         self.default_shader_program = shaders.compileProgram(self.default_vert, self.default_frag)
+
+
+
+class SMDRenderWindow(QWidget):
+    def __init__(self, *args, **kwargs):
+        SMDs = kwargs.pop('SMDs')
+        SMD_names = kwargs.pop('SMD_names')
+        QWidget.__init__(self, *args, **kwargs)
+
+        self.render_window = SMDPreviewWindow(SMDs = SMDs)
+        layout = QVBoxLayout()
+        self.smd_render_selector = QWidget()
+        selector_layout = QVBoxLayout()
+
+        def build_render_func(idx):
+            def func(state):
+                self.render_window.toggle_render(idx, state)
+            return func
+
+        for idx, name in enumerate(SMD_names):
+            selector = QCheckBox(name)
+            selector.setChecked(True)
+            selector.stateChanged.connect(build_render_func(idx))
+            selector_layout.addWidget(selector)
+
+        self.smd_render_selector.setLayout(selector_layout)
+
+        layout.addWidget(self.render_window)
+        layout.addWidget(self.smd_render_selector)
+
+        self.setLayout(layout)
+

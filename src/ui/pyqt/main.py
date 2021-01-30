@@ -38,7 +38,7 @@ def generate_temp_smd_files(mdl_path):
     r_dict = dict()
 
     for file in glob.glob('{tmp_path}/*.smd'.format(tmp_path=tmp_path)):
-        name = re.search(r'(?:[/\\])(?P<name>[^/\\]+)(?:[.]mdl)', file).groupdict()['name']
+        name = re.search(r'(?:[/\\])(?P<name>[^/\\]+)(?:[.]smd)', file).groupdict()['name']
         r_dict[name] = SMD(file)
 
     # now cleanup our file system
@@ -136,9 +136,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.cw)
         self.index = 0
 
-        self.btn = QPushButton("...")
-        self.btn.clicked.connect(self.do_something)
-
         layout = QGridLayout()
         smd_selection_tabs = QTabWidget()
         self.smd_selector = smd_selection_tabs
@@ -146,17 +143,23 @@ class MainWindow(QMainWindow):
         smd_selection_tabs.addTab(MdlSelector(), 'Select Mdl File')
         layout.addWidget(smd_selection_tabs, 0, 0)
         self.process_button = QPushButton('Go')
-        self.process_button.clicked.connect(self.do_something)
+        self.process_button.clicked.connect(self.load_smds)
         layout.addWidget(self.process_button, 1, 0)
-        self.preview_window = SMDPreviewWindow(SMDs=[SMD('./chair_office_reference.smd')])
-        layout.addWidget(self.preview_window, 0, 1)
+        #self.preview_window = SMDPreviewWindow(SMDs=[SMD('./chair_office_reference.smd')])
+        #layout.addWidget(self.preview_window, 0, 1)
         self.cw.setLayout(layout)
 
-    def do_something(self):
+    def load_smds(self):
         smd_tab = self.smd_selector.currentWidget()
         smd_dict = smd_tab.getSMDs()
-        #print(smd_dict['mesh_smd'].getsmdstring())
-        print("pressed")
+        smds = list()
+        names =  list()
+        for name, smd in smd_dict.items():
+            names.append(name)
+            smds.append(smd)
+        self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names)
+        self.cw.layout().addWidget(self.preview_window, 0, 1)
+
 
     def closeEvent(self, e):
         pass
