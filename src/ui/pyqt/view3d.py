@@ -84,11 +84,18 @@ class SimpleVBO:
 class TexturedSMD:
     def __init__(self, smd):
         self.mesh_tri_dict = dict()
+        self.mid_point = np.zeros(3)
         for triangle in smd.triangles:
             if triangle.matName in self.mesh_tri_dict:
                 self.mesh_tri_dict[triangle.matName].append(triangle)
             else:
                 self.mesh_tri_dict[triangle.matName] = [triangle]
+
+            self.mid_point += triangle.verts[0].pos + triangle.verts[1].pos + triangle.verts[2].pos
+
+        if len(smd.triangles):
+            self.mid_point = glm.vec3(self.mid_point / (len(smd.triangles)*3))
+            self.mid_point = glm.vec3(self.mid_point.x, self.mid_point.z, self.mid_point.y)
 
         self.shaded_vbos = dict()
         for k, v in self.mesh_tri_dict.items():
@@ -114,14 +121,31 @@ class TexturedSMD:
 
 
 class RenderContainer:
-    def __init__(self, smd, transforms=None, instances=None,  render=True):
+    def __init__(self, smd, transforms=glm.mat4(), instances=None,  render=True):
         self.smd = smd
         self.render = render
         self.transforms = transforms
         self.instances = instances
 
-    def draw(self):
-        pass
+    def draw(self, shader, camera_transform):
+        full_transforms = camera_transform * self.transforms
+        if self.instances:
+            center = self.smd.mid_point
+            x_c = self.instances[0]
+            x_off = self.instances[3]
+            y_c = self.instances[1]
+            y_off = self.instances[4]
+            z_c = self.instances[2]
+            z_off = self.instances[5]
+            for i in range(x_c):
+                for j in range(y_c):
+                    for k in range(z_c):
+                        correction = glm.vec3(-(x_c-1)*x_off/2, -z_c*z_off/2, -(y_c-1)*y_off/2)
+                        pos = glm.vec3(i*x_off, k*z_off, j*y_off) + correction
+                        full_transforms = camera_transform * glm.translate(glm.mat4(), pos) * self.transforms
+                        self.smd.drawWireframe(shader, full_transforms)
+        else:
+            self.smd.drawWireframe(shader, full_transforms)
 
 
 class SMDPreviewWindow(QGLWidget):
@@ -132,7 +156,7 @@ class SMDPreviewWindow(QGLWidget):
         self.raw_smds = SMDs
         self.render_objects = list()
         self.render_dict = dict() # this will be used to determine which objects should be rendered/what transformations
-
+        self.camera = dict()
         self.viewport_transform = dict()
         self.setMouseTracking(True)  # we need this for drag, zoom, and pan
 
@@ -141,13 +165,13 @@ class SMDPreviewWindow(QGLWidget):
         self.camera_zoom = 50.0
         self.center_pos = glm.vec3(0.0)
 
-
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the color buffer and depth buffer (blank canvas)
 
         for idx, object in enumerate(self.render_objects):
             if self.render_dict[idx].render:
-                object.drawWireframe(self.default_shader_program, self.viewport_transform['state'])
+                #object.drawWireframe(self.default_shader_program, self.viewport_transform['state'])
+                self.render_dict[idx].draw(self.default_shader_program, self.viewport_transform['state'])
 
         # we'll render a wireframe for now, since we can't import textures yet
 
@@ -157,7 +181,10 @@ class SMDPreviewWindow(QGLWidget):
         identity = glm.mat4()
         perspective = glm.perspective(45.0, aspect, 0.1, 10000.0)
         camera = glm.lookAt(self.camera_lookdir*self.camera_zoom + self.center_pos, self.center_pos, self.camera_up)
-
+        self.camera["aspect"] = aspect
+        self.camera["vfov"] = glm.radians(45.0)
+        self.camera["h_inv"] = 1/float(height)
+        self.camera["w_inv"] = 1/float(width)
         self.viewport_transform['identity'] = identity
         self.viewport_transform['camera'] = camera
         self.viewport_transform['projection'] = perspective
@@ -177,7 +204,6 @@ class SMDPreviewWindow(QGLWidget):
 
         self.mouse_x = event.globalPos().x()
         self.mouse_y = event.globalPos().y()
-
 
     def mouseReleaseEvent(self, event):
         lbutton = event.buttons() & QtCore.Qt.LeftButton
@@ -210,7 +236,12 @@ class SMDPreviewWindow(QGLWidget):
 
     def pan_camera(self, dX, dY):
         right = glm.normalize(glm.cross(self.camera_lookdir, self.camera_up))
-        self.center_pos += self.camera_up*dY + right*dX
+        tan_h = glm.tan(self.camera["vfov"])*self.camera_zoom  # h qty
+        # aspect = w/h
+        # w qty =  w/h * h_qty
+        dX = dX * self.camera['w_inv']
+        dY = dY * self.camera['h_inv']
+        self.center_pos += (self.camera_up*dY + right*dX*self.camera["aspect"])*tan_h
         self.refresh_state_matrix()
 
     def zoom_camera(self, dZ):
@@ -228,7 +259,7 @@ class SMDPreviewWindow(QGLWidget):
             mbutton = event.buttons() & QtCore.Qt.MiddleButton
             lbutton = event.buttons() & QtCore.Qt.LeftButton
             if mbutton:
-                self.pan_camera(dX*0.5, dY*0.5)
+                self.pan_camera(dX, dY)
             else:
                 self.rotate_camera(dX*0.05, -dY*0.05)
             self.update()
@@ -244,14 +275,13 @@ class SMDPreviewWindow(QGLWidget):
         self.update()
 
     def initializeGL(self):
-        glClearColor(0.0, 0.0, 1.0, 1.0)
+        glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_DEPTH_TEST)  # backface full
-
 
         for idx, smd in enumerate(self.raw_smds):
             built_smd = TexturedSMD(smd)
             self.render_objects.append(built_smd)
-            self.render_dict[idx] = RenderContainer(built_smd)
+            self.render_dict[idx] = RenderContainer(built_smd, instances=[2, 2, 1, 128, 128, 128])
 
         self.default_vert = shaders.compileShader(
             """
@@ -271,8 +301,6 @@ class SMDPreviewWindow(QGLWidget):
             }
             """, GL_VERTEX_SHADER)
 
-
-
         self.default_frag = shaders.compileShader(
             """
             #version 430 core
@@ -282,7 +310,6 @@ class SMDPreviewWindow(QGLWidget):
             """, GL_FRAGMENT_SHADER)
 
         self.default_shader_program = shaders.compileProgram(self.default_vert, self.default_frag)
-
 
 
 class SMDRenderWindow(QWidget):
