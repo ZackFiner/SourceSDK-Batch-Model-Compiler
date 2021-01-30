@@ -155,7 +155,7 @@ class SMDPreviewWindow(QGLWidget):
         glViewport(0,0, width, height)
         aspect = width / float(height)
         identity = glm.mat4()
-        perspective = glm.perspective(45.0, aspect, 0.1, 1000.0)
+        perspective = glm.perspective(45.0, aspect, 0.1, 10000.0)
         camera = glm.lookAt(self.camera_lookdir*self.camera_zoom + self.center_pos, self.center_pos, self.camera_up)
 
         self.viewport_transform['identity'] = identity
