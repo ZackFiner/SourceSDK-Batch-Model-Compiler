@@ -5,6 +5,7 @@ import shutil
 from src.ui.pyqt.view3d import *
 import subprocess
 import sys
+import re
 
 
 def put_file_in_dict(parent, text_dict, keyword):
@@ -15,7 +16,7 @@ def put_file_in_dict(parent, text_dict, keyword):
 
     return func
 
-import re
+
 def generate_temp_smd_files(mdl_path):
     tmp_path = './tmp_smd_files'
     try:
@@ -25,7 +26,6 @@ def generate_temp_smd_files(mdl_path):
         os.mkdir(tmp_path)
 
     os.system('Crowbar.exe -p "{mdl_path}" -o "%CD%/tmp_smd_files"'.format(mdl_path=mdl_path))
-
 
     # crowbar exports smds as based on the qc it generates
     # this means that pulling the appropriate .smd out is a bit more complicated than it might
@@ -62,24 +62,19 @@ class SMDSelector(QWidget, SMDFileSelector):
         file_path_layout = QGridLayout()
         file_path_layout.addWidget(QLabel('Mesh SMD'), 0, 0)
         file_path_layout.addWidget(QLabel('Phys SMD'), 1, 0)
-        file_path_layout.addWidget(QLabel('Ref SMD'), 2, 0)
 
         self.file_paths['mesh_smd'] = QLineEdit()
         self.file_paths['phys_smd'] = QLineEdit()
-        self.file_paths['ref_smd'] = QLineEdit()
         file_path_layout.addWidget(self.file_paths['mesh_smd'], 0, 1)
         file_path_layout.addWidget(self.file_paths['phys_smd'], 1, 1)
-        file_path_layout.addWidget(self.file_paths['ref_smd'], 2, 1)
 
         self.btn_select_mesh_smd = QPushButton('...')
         self.btn_select_mesh_smd.clicked.connect(put_file_in_dict(self, self.file_paths, 'mesh_smd'))
         self.btn_select_phys_smd = QPushButton('...')
         self.btn_select_phys_smd.clicked.connect(put_file_in_dict(self, self.file_paths, 'phys_smd'))
-        self.btn_select_ref_smd = QPushButton('...')
-        self.btn_select_ref_smd.clicked.connect(put_file_in_dict(self, self.file_paths, 'ref_smd'))
+
         file_path_layout.addWidget(self.btn_select_mesh_smd, 0, 2)
         file_path_layout.addWidget(self.btn_select_phys_smd, 1, 2)
-        file_path_layout.addWidget(self.btn_select_ref_smd, 2, 2)
 
         self.file_path_area.setLayout(file_path_layout)
 
@@ -91,11 +86,9 @@ class SMDSelector(QWidget, SMDFileSelector):
         r_dict = dict()
         mesh_path = self.file_paths['mesh_smd'].text()
         phys_path = self.file_paths['phys_smd'].text()
-        ref_path = self.file_paths['ref_smd'].text()
 
         r_dict['mesh_smd'] = SMD(mesh_path)
         r_dict['phys_smd'] = SMD(phys_path)
-        r_dict['ref_smd'] = SMD(ref_path)
 
         return r_dict
 
@@ -160,9 +153,9 @@ class MainWindow(QMainWindow):
         self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names)
         self.cw.layout().addWidget(self.preview_window, 0, 1)
 
-
     def closeEvent(self, e):
         pass
+
 
 app = QApplication([])
 window = MainWindow()
