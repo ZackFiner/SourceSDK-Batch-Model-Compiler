@@ -144,14 +144,49 @@ class MainWindow(QMainWindow):
 
     def load_smds(self):
         smd_tab = self.smd_selector.currentWidget()
+        self.instance_data = [1,1,1,128,128,128]
         smd_dict = smd_tab.getSMDs()
         smds = list()
-        names =  list()
+        names = list()
         for name, smd in smd_dict.items():
             names.append(name)
             smds.append(smd)
-        self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names)
+        self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names, instance_data=self.instance_data)
+
+        def create_func(idx):
+            def func(data):
+                self.instance_data[idx] = int(data)
+                self.preview_window.update()
+
+            return func
+
+        self.tiling_widget = QWidget()
+        tiling_widget_layout = QGridLayout()
+        h_slider = QSlider(QtCore.Qt.Horizontal)
+        h_slider.setTickInterval(1)
+        h_slider.setMinimum(1)
+        h_slider.setMaximum(10)
+        h_slider.setValue(1)
+        h_slider.valueChanged.connect(create_func(0))
+        w_slider = QSlider(QtCore.Qt.Horizontal)
+        w_slider.setTickInterval(1)
+        w_slider.setMinimum(1)
+        w_slider.setMaximum(10)
+        w_slider.setValue(1)
+        w_slider.valueChanged.connect(create_func(1))
+        l_slider = QSlider(QtCore.Qt.Horizontal)
+        l_slider.setTickInterval(1)
+        l_slider.setMinimum(1)
+        l_slider.setMaximum(10)
+        l_slider.setValue(1)
+        l_slider.valueChanged.connect(create_func(2))
+        tiling_widget_layout.addWidget(h_slider, 0,0)
+        tiling_widget_layout.addWidget(w_slider, 1,0)
+        tiling_widget_layout.addWidget(l_slider, 2,0)
+        self.tiling_widget.setLayout(tiling_widget_layout)
+
         self.cw.layout().addWidget(self.preview_window, 0, 1)
+        self.cw.layout().addWidget(self.tiling_widget, 1, 1)
 
     def closeEvent(self, e):
         pass

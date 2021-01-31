@@ -150,7 +150,8 @@ class RenderContainer:
 
 class SMDPreviewWindow(QGLWidget):
     def __init__(self, *args, **kwargs):
-        SMDs = kwargs.pop('SMDs')
+        SMDs = kwargs.pop('SMDs', None)
+        self.instance_data = kwargs.pop('instance_data', None)
         QGLWidget.__init__(self, *args, **kwargs)
         self.setMinimumSize(640, 480)
         self.raw_smds = SMDs
@@ -160,8 +161,8 @@ class SMDPreviewWindow(QGLWidget):
         self.viewport_transform = dict()
         self.setMouseTracking(True)  # we need this for drag, zoom, and pan
 
-        self.camera_lookdir = glm.vec3(1.0,0.0,0.0)
-        self.camera_up = glm.vec3(0.0,1.0,0.0)
+        self.camera_lookdir = glm.vec3(1.0, 0.0, 0.0)
+        self.camera_up = glm.vec3(0.0, 1.0, 0.0)
         self.camera_zoom = 50.0
         self.center_pos = glm.vec3(0.0)
 
@@ -281,7 +282,7 @@ class SMDPreviewWindow(QGLWidget):
         for idx, smd in enumerate(self.raw_smds):
             built_smd = TexturedSMD(smd)
             self.render_objects.append(built_smd)
-            self.render_dict[idx] = RenderContainer(built_smd, instances=[2, 2, 1, 128, 128, 128])
+            self.render_dict[idx] = RenderContainer(built_smd, instances=self.instance_data)
 
         self.default_vert = shaders.compileShader(
             """
@@ -314,11 +315,12 @@ class SMDPreviewWindow(QGLWidget):
 
 class SMDRenderWindow(QWidget):
     def __init__(self, *args, **kwargs):
-        SMDs = kwargs.pop('SMDs')
-        SMD_names = kwargs.pop('SMD_names')
+        SMDs = kwargs.pop('SMDs', None)
+        SMD_names = kwargs.pop('SMD_names', None)
+        self.instance_data = kwargs.pop('instance_data', None)
         QWidget.__init__(self, *args, **kwargs)
 
-        self.render_window = SMDPreviewWindow(SMDs = SMDs)
+        self.render_window = SMDPreviewWindow(SMDs=SMDs, instance_data=self.instance_data)
         layout = QVBoxLayout()
         self.smd_render_selector = QWidget()
         selector_layout = QVBoxLayout()
@@ -340,4 +342,8 @@ class SMDRenderWindow(QWidget):
         layout.addWidget(self.smd_render_selector)
 
         self.setLayout(layout)
+
+    def update(self):
+        super().update()
+        self.render_window.update()
 
