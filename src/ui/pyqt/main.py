@@ -121,37 +121,11 @@ class MdlSelector(QWidget):
         return r_dict
 
 
-class MainWindow(QMainWindow):
+class InstancingEditor(QWidget):
     def __init__(self, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
-        self.cw = QWidget(self)
-        layout = QGridLayout()
-        self.setCentralWidget(self.cw)
-        self.index = 0
-
-        layout = QGridLayout()
-        smd_selection_tabs = QTabWidget()
-        self.smd_selector = smd_selection_tabs
-        smd_selection_tabs.addTab(SMDSelector(), 'Select SMD Files')
-        smd_selection_tabs.addTab(MdlSelector(), 'Select Mdl File')
-        layout.addWidget(smd_selection_tabs, 0, 0)
-        self.process_button = QPushButton('Go')
-        self.process_button.clicked.connect(self.load_smds)
-        layout.addWidget(self.process_button, 1, 0)
-        #self.preview_window = SMDPreviewWindow(SMDs=[SMD('./chair_office_reference.smd')])
-        #layout.addWidget(self.preview_window, 0, 1)
-        self.cw.setLayout(layout)
-
-    def load_smds(self):
-        smd_tab = self.smd_selector.currentWidget()
-        self.instance_data = [1,1,1,128,128,128]
-        smd_dict = smd_tab.getSMDs()
-        smds = list()
-        names = list()
-        for name, smd in smd_dict.items():
-            names.append(name)
-            smds.append(smd)
-        self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names, instance_data=self.instance_data)
+        self.instance_data = kwargs.pop('instance_data', [1,1,1,1,1,1])
+        self.preview_window = kwargs.pop('preview_window', None)
+        super(InstancingEditor, self).__init__(*args, **kwargs)
 
         def create_func(idx):
             def func(data):
@@ -160,7 +134,6 @@ class MainWindow(QMainWindow):
 
             return func
 
-        self.tiling_widget = QWidget()
         tiling_widget_layout = QGridLayout()
         h_slider = QSlider(QtCore.Qt.Horizontal)
         h_slider.setTickInterval(1)
@@ -186,7 +159,43 @@ class MainWindow(QMainWindow):
         tiling_widget_layout.addWidget(w_slider, 1,1)
         tiling_widget_layout.addWidget(QLabel('Z #'), 2, 0)
         tiling_widget_layout.addWidget(l_slider, 2,1)
-        self.tiling_widget.setLayout(tiling_widget_layout)
+
+        self.setLayout(tiling_widget_layout)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
+        self.cw = QWidget(self)
+        layout = QGridLayout()
+        self.setCentralWidget(self.cw)
+        self.index = 0
+
+        layout = QGridLayout()
+        smd_selection_tabs = QTabWidget()
+        self.smd_selector = smd_selection_tabs
+        smd_selection_tabs.addTab(SMDSelector(), 'Select SMD Files')
+        smd_selection_tabs.addTab(MdlSelector(), 'Select Mdl File')
+        layout.addWidget(smd_selection_tabs, 0, 0)
+        self.process_button = QPushButton('Load')
+        self.process_button.clicked.connect(self.load_smds)
+        layout.addWidget(self.process_button, 1, 0)
+        #self.preview_window = SMDPreviewWindow(SMDs=[SMD('./chair_office_reference.smd')])
+        #layout.addWidget(self.preview_window, 0, 1)
+        self.cw.setLayout(layout)
+
+    def load_smds(self):
+        smd_tab = self.smd_selector.currentWidget()
+        self.instance_data = [1,1,1,128,128,128]
+        smd_dict = smd_tab.getSMDs()
+        smds = list()
+        names = list()
+        for name, smd in smd_dict.items():
+            names.append(name)
+            smds.append(smd)
+
+        self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names, instance_data=self.instance_data)
+        self.tiling_widget = InstancingEditor(instance_data=self.instance_data, preview_window=self.preview_window)
 
         self.cw.layout().addWidget(self.preview_window, 0, 1)
         self.cw.layout().addWidget(self.tiling_widget, 1, 1)

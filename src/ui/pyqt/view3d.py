@@ -137,10 +137,10 @@ class RenderContainer:
             y_off = self.instances[4]
             z_c = self.instances[2]
             z_off = self.instances[5]
+            correction = glm.vec3(-(x_c - 1) * x_off / 2, -z_c * z_off / 2, -(y_c - 1) * y_off / 2)
             for i in range(x_c):
                 for j in range(y_c):
                     for k in range(z_c):
-                        correction = glm.vec3(-(x_c-1)*x_off/2, -z_c*z_off/2, -(y_c-1)*y_off/2)
                         pos = glm.vec3(i*x_off, k*z_off, j*y_off) + correction
                         full_transforms = camera_transform * glm.translate(glm.mat4(), pos) * self.transforms
                         self.smd.drawWireframe(shader, full_transforms)
