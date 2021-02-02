@@ -163,6 +163,38 @@ class InstancingEditor(QWidget):
         self.setLayout(tiling_widget_layout)
 
 
+class CompileBaseSelector(QWidget):
+    def __init__(self, *args, **kwargs):
+        self.smd_list = kwargs.pop("smd_list", [])
+        super(CompileBaseSelector, self).__init__(*args, **kwargs)
+        self.sel_mesh_smd = QComboBox()
+        self.sel_phys_smd = QComboBox()
+        self.sel_ref_smd = QComboBox()
+        self.sel_mesh_smd.addItems(list(self.smd_list.keys()))
+        self.sel_phys_smd.addItems(list(self.smd_list.keys()))
+        self.sel_ref_smd.addItems(list(self.smd_list.keys()))
+        layout = QGridLayout()
+        layout.addWidget(QLabel("Base SMD"), 0, 0)
+        layout.addWidget(QLabel("Physics SMD"), 1, 0)
+        layout.addWidget(QLabel("Reference SMD"), 2, 0)
+        layout.addWidget(self.sel_mesh_smd, 0, 1)
+        layout.addWidget(self.sel_phys_smd, 1, 1)
+        layout.addWidget(self.sel_ref_smd, 2, 1)
+        self.setLayout(layout)
+
+    def getCompileSMDs(self):
+        r_dict = dict()
+        base = self.sel_mesh_smd.currentText()
+        phys = self.sel_phys_smd.currentText()
+        ref = self.sel_ref_smd.currentText()
+
+        r_dict[base] = self.smd_list[base]
+        r_dict[phys] = self.smd_list[phys]
+        r_dict[ref] = self.smd_list[ref]
+
+        return r_dict
+
+
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -196,9 +228,11 @@ class MainWindow(QMainWindow):
 
         self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names, instance_data=self.instance_data)
         self.tiling_widget = InstancingEditor(instance_data=self.instance_data, preview_window=self.preview_window)
+        self.smd_compiler_selector = CompileBaseSelector(smd_list=smd_dict)
 
         self.cw.layout().addWidget(self.preview_window, 0, 1)
         self.cw.layout().addWidget(self.tiling_widget, 1, 1)
+        self.cw.layout().addWidget(self.smd_compiler_selector, 0, 2)
 
     def closeEvent(self, e):
         pass
