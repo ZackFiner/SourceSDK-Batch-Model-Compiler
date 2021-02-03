@@ -180,6 +180,15 @@ class CompileBaseSelector(QWidget):
         layout.addWidget(self.sel_mesh_smd, 0, 1)
         layout.addWidget(self.sel_phys_smd, 1, 1)
         layout.addWidget(self.sel_ref_smd, 2, 1)
+        self.file_paths = dict()
+        self.file_paths["output_path"] = QLineEdit()
+        self.out_path_selector = QPushButton('...')
+        self.out_path_selector.clicked.connect(put_file_in_dict(self, self.file_paths, "output_path"))
+        self.btn_compile = QPushButton("Compile")
+        self.btn_compile.clicked.connect(self.compileSMDs)
+        layout.addWidget(QLabel("Output"), 3, 0)
+        layout.addWidget(self.file_paths["output_path"], 3, 1)
+        layout.addWidget(self.out_path_selector, 3, 2)
         self.setLayout(layout)
 
     def getCompileSMDs(self):
@@ -193,6 +202,9 @@ class CompileBaseSelector(QWidget):
         r_dict[ref] = self.smd_list[ref]
 
         return r_dict
+
+    def compileSMDs(self):
+        pass
 
 
 class MainWindow(QMainWindow):
