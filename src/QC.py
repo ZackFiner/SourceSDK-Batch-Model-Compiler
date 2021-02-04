@@ -1,6 +1,9 @@
 import re
 
 class QC:
+    def load_qc_from_file(self, filename):
+        pass
+
     def __init__(self, filename:str = None):
         self.modelname = ""
         self.body = {"title": "", "studio_path": ""}
@@ -9,6 +12,11 @@ class QC:
         self.cdmaterials = list()
         self.sequence = [{"title": "", "studio_path": ""}]
         self.collision_model = {"studio_path": "", "params": ["{ $concave }"]}
+        self.body_groups = dict()
+        self.LOD = dict()
+
+        if filename:
+            self.load_qc_from_file(filename)
 
     def get_qc_string(self)->str:
         concat_list = [

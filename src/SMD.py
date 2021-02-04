@@ -88,11 +88,11 @@ class SMD:
                 self.nodes.append(f_data[index].strip('\n'))
                 index += 1
 
-            index = seek("skeleton", index)
+            """index = seek("skeleton", index)
             index += 1
             while "end" not in f_data[index]:
                 self.sequence.append(TimeFrame(f_data[index:index+2]))
-                index += 2
+                index += 2"""
 
             index = seek("triangles", index)
             index += 1
@@ -130,8 +130,8 @@ class SMD:
         f.write(r_str)
         f.close()
 
-d = SMD('facade2_mesh.smd')
-d.write_to_file('newmd')
+#d = SMD('facade2_mesh.smd')
+#d.write_to_file('newmd')
 #print(len(d.triangles))
 #print("T")
 
