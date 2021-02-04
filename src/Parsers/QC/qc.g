@@ -1,16 +1,18 @@
 start: qc;
 
-// rules
-qc: qc_cmd+;
-qc_cmd: '\$'command_name params;
-?params: (literal|body|label)*;
+qc: (qc_cmd|line_comment)+;
+qc_cmd: '\$'command_name param*;
+param: (literal|body|label);
 command_name: '\w+';
 
-body: '\{'(qc_cmd|literal|body|label)'\}';
+body: '\{'(qc_cmd|literal|body|label)*'\}';
 @literal: (number|string);
-label: '\w+';
+label: label_name label_param*;
+label_name: '\w+';
+label_param: (literal|body);
 
 string: '".*"';
-number: '-?([1-9]\d*|\d)(\.\d+)?([eE][+-]?\d+)';
+number: '-?(\d+)(.\d+)?(e-?\d+)?';
 commnad_start_symbol: '\$';
+line_comment: '//(\w+|\s+)*';
 WHITESPACE: '[ \n\t]+' (%ignore);
