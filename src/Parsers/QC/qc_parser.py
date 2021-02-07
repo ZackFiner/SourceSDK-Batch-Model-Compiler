@@ -1,5 +1,6 @@
 import plyplus
 from plyplus import Grammar
+from plyplus import STransformer
 
 def naive_parse(filepath):
     fp = open(filepath, 'r')
@@ -20,7 +21,7 @@ label: label_name label_param*;
 label_name: '\w+';
 label_param: (literal|body);
 
-string: '".*"';
+string: '"[^"]*"';
 number: '-?(\d+)(.\d+)?(e-?\d+)?';
 commnad_start_symbol: '\$';
 LINECOMMENT: '(//|#|;).*\n' (%ignore); // ignore line comments like this one
@@ -86,3 +87,19 @@ result = qc_parser.parse(qc_example)
 
 print(result.pretty())
 
+class QCTransformer(STransformer):
+    string = lambda self, node: node.tail[0][1:-1]
+    number = lambda self, node: float(node.tail[0].replace(' ', ''))
+    param = lambda self, node: node.tail[0]
+    body = lambda self, node: node.tail
+    command_name = lambda self, node: node.tail[0]
+    qc_cmd = lambda self, node: {node.tail[0]: node.tail[1:]}
+    literal = lambda self, node: node.tail[0]
+    label = lambda self, node: {node.tail[0]: node.tail[1:]}
+    label_name = lambda self, node: node.tail[0]
+    label_param = lambda self, node: node.tail[0]
+    start = lambda self, node: node.tail[0]
+    qc = lambda self, node: node.tail
+
+
+print(QCTransformer().transform(result))
