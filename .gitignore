@@ -4,3 +4,4 @@ venv/
 cluster_debug.png
 *.exe
 *.dll
+*.jar
