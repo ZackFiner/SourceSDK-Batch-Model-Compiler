@@ -166,6 +166,7 @@ class InstancingEditor(QWidget):
 class CompileBaseSelector(QWidget):
     def __init__(self, *args, **kwargs):
         self.smd_list = kwargs.pop("smd_list", [])
+        self.instance_data = kwargs.pop("instance_data", [])
         super(CompileBaseSelector, self).__init__(*args, **kwargs)
         self.sel_mesh_smd = QComboBox()
         self.sel_phys_smd = QComboBox()
@@ -240,7 +241,7 @@ class MainWindow(QMainWindow):
 
         self.preview_window = SMDRenderWindow(SMDs=smds, SMD_names=names, instance_data=self.instance_data)
         self.tiling_widget = InstancingEditor(instance_data=self.instance_data, preview_window=self.preview_window)
-        self.smd_compiler_selector = CompileBaseSelector(smd_list=smd_dict)
+        self.smd_compiler_selector = CompileBaseSelector(smd_list=smd_dict, instance_data=self.instance_data)
 
         self.cw.layout().addWidget(self.preview_window, 0, 1)
         self.cw.layout().addWidget(self.tiling_widget, 1, 1)
